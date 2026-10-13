@@ -14,13 +14,14 @@ Base atual: `v0.63.18.4` · Branch: `all-branding`
 | **Tema escuro** com a paleta unificada do design system ALL Tecnologias (fundos, textos, semáforo) | `frontend/src/metabase/ui/colors/constants/themes/dark.ts` (bloco `ALL_DARK`) |
 | Tema escuro como padrão para todos os usuários (cada um ainda pode trocar no perfil) | `src/metabase/users/settings.clj` (`color-scheme`) |
 | Fonte da interface: Inter | `src/metabase/appearance/settings.clj` (`application-font`) |
-| Logo da barra superior | `resources/frontend_client/app/assets/img/all-logo.svg` |
+| Logo da barra superior (horizontal: ícone + "ALL Tecnologias") | `resources/frontend_client/app/assets/img/all-logo-horizontal.svg` |
+| Ícone (login, admin, menus) | `resources/frontend_client/app/assets/img/all-logo-icon.svg` |
 | Favicon | `resources/frontend_client/app/assets/img/favicon.ico` (+ `favicon-16x16.png`, `favicon-32x32.png`) |
 | Logo dos e-mails (assinaturas de dashboard) | `resources/frontend_client/app/assets/img/email_logo.png` |
 
 Arquivos de apoio: `.github/workflows/all-build.yml` (build da imagem), `bin/all-upgrade.sh` (atualização de versão).
 
-> Logo oficial (símbolo do chip) vetorizado em `all-logo.svg`; cor da marca `#35A8E0`. Para trocar, mantenha os mesmos nomes de arquivo.
+> Logos e favicon gerados a partir dos arquivos oficiais do design system (ícone e logo texto, sem o slogan na barra); cor da marca `#35A8E0`. Para trocar, mantenha os mesmos nomes de arquivo.
 
 ### Como funciona (resumo técnico)
 As configurações de aparência do Metabase (`application-name`, `application-colors`,

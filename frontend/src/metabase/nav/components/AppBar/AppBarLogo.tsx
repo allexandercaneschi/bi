@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 
-import { LogoIcon } from "metabase/common/components/LogoIcon";
+import { BRAND } from "metabase/branding/config";
 import { useIsAtHomepageDashboard } from "metabase/common/hooks/use-is-at-homepage-dashboard";
 
 import { LogoLink } from "./AppBarLogo.styled";
@@ -44,7 +44,14 @@ export function AppBarLogo({
       disabled={!isNavBarEnabled}
       data-testid="main-logo-link"
     >
-      <LogoIcon height={32} />
+      {/* ALL Tecnologias: logo horizontal (ícone + nome) na barra superior */}
+      <img
+        src={BRAND.logoHorizontalUrl}
+        alt={BRAND.name}
+        height={28}
+        style={{ height: 28, width: "auto", maxWidth: "13rem" }}
+        data-testid="main-logo"
+      />
     </LogoLink>
   );
 }
