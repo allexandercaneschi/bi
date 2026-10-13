@@ -11,6 +11,9 @@ Base atual: `v0.63.18.4` · Branch: `all-branding`
 |---|---|
 | Nome "B.I ALL Tecnologias" na interface, mensagens de carregamento, links do metabase.com ocultos | `frontend/src/metabase/branding/config.ts` |
 | Nome no título da aba/e-mails, **cores da marca**, logo padrão | `src/metabase/appearance/settings.clj` (valores `:default`) |
+| **Tema escuro** com a paleta unificada do design system ALL Tecnologias (fundos, textos, semáforo) | `frontend/src/metabase/ui/colors/constants/themes/dark.ts` (bloco `ALL_DARK`) |
+| Tema escuro como padrão para todos os usuários (cada um ainda pode trocar no perfil) | `src/metabase/users/settings.clj` (`color-scheme`) |
+| Fonte da interface: Inter | `src/metabase/appearance/settings.clj` (`application-font`) |
 | Logo da barra superior | `resources/frontend_client/app/assets/img/all-logo.svg` |
 | Favicon | `resources/frontend_client/app/assets/img/favicon.ico` (+ `favicon-16x16.png`, `favicon-32x32.png`) |
 | Logo dos e-mails (assinaturas de dashboard) | `resources/frontend_client/app/assets/img/email_logo.png` |

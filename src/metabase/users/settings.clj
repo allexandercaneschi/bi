@@ -109,7 +109,8 @@
   :export?    false
   :visibility :authenticated
   :type       :string
-  :default    "auto")
+  ;; ALL Tecnologias: tema escuro como padrão (design system). O usuário ainda pode trocar.
+  :default    "dark")
 
 (defsetting trial-banner-dismissal-timestamp
   (deferred-tru "The ISO8601 date when a user last dismissed the trial banner.")

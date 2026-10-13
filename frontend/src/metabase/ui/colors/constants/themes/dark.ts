@@ -180,11 +180,58 @@ const actualColors = {
 /**
  * The default dark theme for Metabase.
  */
+/**
+ * ALL Tecnologias: paleta escura unificada do design system (mesmas cores do
+ * pfSense e do Bacularis). Edite aqui para mudar o tema escuro do portal.
+ *   página #0B1220 · cards #121A2B · cabeçalhos/menus #1A2438
+ *   texto #E6EDF5 / #9AA8BC · azul de texto #6CC3EE
+ *   semáforo: OK #3CCB7F · atenção #F5BE4A · crítico #F26B6B
+ */
+const ALL_DARK = {
+  page: "#0B1220",
+  surface: "#121A2B",
+  raised: "#1A2438",
+  text: "#E6EDF5",
+  textMuted: "#9AA8BC",
+  brandText: "#6CC3EE",
+  ok: "#3CCB7F",
+  warning: "#F5BE4A",
+  critical: "#F26B6B",
+};
+
+const allTecnologiasDarkOverrides = {
+  // superfícies
+  "background-primary": ALL_DARK.surface,
+  "background-secondary": ALL_DARK.page,
+  "background-tertiary": ALL_DARK.raised,
+  "background_page-primary": ALL_DARK.surface,
+  "background_page-secondary": ALL_DARK.page,
+  "background_page-tertiary": ALL_DARK.page,
+  white: ALL_DARK.surface,
+  "core-white": ALL_DARK.surface,
+  "tooltip-background": ALL_DARK.raised,
+  // texto
+  "text-primary": ALL_DARK.text,
+  "text-secondary": ALL_DARK.textMuted,
+  "text-brand": ALL_DARK.brandText,
+  "tooltip-text": ALL_DARK.text,
+  "tooltip-text-secondary": ALL_DARK.textMuted,
+  // semáforo
+  success: ALL_DARK.ok,
+  "feedback-positive": ALL_DARK.ok,
+  warning: ALL_DARK.warning,
+  "feedback-warning": ALL_DARK.warning,
+  danger: ALL_DARK.critical,
+  error: ALL_DARK.critical,
+  "feedback-negative": ALL_DARK.critical,
+};
+
 export const METABASE_DARK_THEME: MetabaseThemeV2 = {
   version: 2,
   chartColors: DARK_THEME_ACCENT_COLORS,
   colors: {
     ...deprecatedColors,
     ...actualColors,
+    ...allTecnologiasDarkOverrides,
   },
 };

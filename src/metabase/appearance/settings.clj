@@ -140,7 +140,8 @@ To change the chart colors:
   :visibility :public
   :export?    true
   :type       :string
-  :default    "Lato"
+  ;; ALL Tecnologias: fonte da interface do design system (Inter, já inclusa no Metabase)
+  :default    "Inter"
   :feature    :whitelabel
   :audit      :getter
   :setter     (fn [new-value]
