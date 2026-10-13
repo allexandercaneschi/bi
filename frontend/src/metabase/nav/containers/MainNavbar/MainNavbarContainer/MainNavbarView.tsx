@@ -9,7 +9,6 @@ import type { CollectionTreeItem } from "metabase/common/collections/utils";
 import {
   isExamplesCollection,
   isLibraryCollection,
-  isRootPersonalCollection,
   isRootTrashCollection,
 } from "metabase/common/collections/utils";
 import { CollapseSection } from "metabase/common/components/CollapseSection";
@@ -52,6 +51,7 @@ import type { SelectedItem } from "../types";
 import { AddDataModal } from "./AddDataModal";
 import BookmarkList from "./BookmarkList";
 import { BrowseNavSection } from "./BrowseNavSection";
+import { ClientNavbar } from "./ClientNavbar";
 import { GettingStartedSection } from "./GettingStartedSection";
 
 type Props = {
@@ -179,30 +179,17 @@ export function MainNavbarView({
     ? t`Internal Collections`
     : t`Collections`;
 
-  // ALL Tecnologias: usuário de grupo de cliente vê apenas as coleções liberadas
-  // para ele (sem Início, coleção pessoal, Dados, Lixeira, favoritos etc.).
+  // ALL Tecnologias: usuário de grupo de cliente vê só as pastas e painéis liberados.
   if (isAllClientUser) {
     return (
-      <ErrorBoundary>
-        <SidebarContentRoot>
-          <div>
-            <SidebarSection>
-              <ErrorBoundary>
-                <Tree
-                  data={regularCollections.filter(
-                    (collection) => !isRootPersonalCollection(collection),
-                  )}
-                  selectedId={collectionItem?.id}
-                  onSelect={onItemSelect}
-                  TreeNode={SidebarCollectionLink}
-                  role="tree"
-                  aria-label="collection-tree"
-                />
-              </ErrorBoundary>
-            </SidebarSection>
-          </div>
-        </SidebarContentRoot>
-      </ErrorBoundary>
+      <ClientNavbar
+        collections={regularCollections.filter(
+          (collection) => collection.id !== "root",
+        )}
+        selectedCollectionId={collectionItem?.id}
+        selectedDashboardId={dashboardItem?.id}
+        onItemSelect={onItemSelect}
+      />
     );
   }
 

@@ -8,10 +8,12 @@ import {
   useGetCollectionQuery,
 } from "metabase/api";
 import { NavbarPromoSlot } from "metabase/nav/components/NavbarPromoSlot";
-import { connect } from "metabase/redux";
+import { connect, useSelector } from "metabase/redux";
 import { closeNavbar, openNavbar } from "metabase/redux/app";
 import type { State } from "metabase/redux/store";
+import { getIsAllClientUser } from "metabase/selectors/user";
 import * as Urls from "metabase/urls";
+import { isSmallScreen } from "metabase/utils/dom";
 import Question from "metabase-lib/v1/Question";
 import type { CollectionId } from "metabase-types/api";
 
@@ -84,6 +86,15 @@ function MainNavbarInner({
   const { currentData: collection } = useGetCollectionQuery(
     collectionId ? { id: collectionId } : skipToken,
   );
+
+  // ALL Tecnologias: para usuários de grupo de cliente o menu é a única forma de
+  // trocar de painel, então ele não recolhe ao abrir um painel.
+  const isAllClientUser = useSelector(getIsAllClientUser);
+  useEffect(() => {
+    if (isAllClientUser && !isSmallScreen()) {
+      openNavbar();
+    }
+  }, [isAllClientUser, location.pathname, openNavbar]);
 
   useEffect(() => {
     function handleSidebarKeyboardShortcut(e: KeyboardEvent) {

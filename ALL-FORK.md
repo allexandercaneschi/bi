@@ -37,14 +37,24 @@ não é removido nem contornado.
   removido depois, se quiser.
 - Testes do upstream que esperam o texto "Metabase" não foram ajustados (o build de produção não os roda).
 
+## Design system ALL Tecnologias
+
+- Tema **escuro por padrão** (`color-scheme` = `dark` em `src/metabase/users/settings.clj`; cada usuário ainda pode trocar no perfil).
+- Paleta escura em `frontend/src/metabase/ui/colors/constants/themes/dark.ts`, bloco `ALL_DARK`
+  (surface-0/100/200, border, ink, ink-muted, brand-strong, brand-soft, semáforo, texto escuro sobre o azul).
+- Fonte de interface **Inter** (padrão de `application-font`).
+
 ## Grupos de cliente (interface reduzida)
 
 Em **Admin → Pessoas → Grupos → (grupo)** há o interruptor **"Grupo de cliente"**. Membros desses
 grupos (que não sejam administradores) veem apenas as coleções liberadas para eles:
 
+- o menu lateral mostra só **Painéis** (todos os dashboards liberados) e **Pastas** (coleções
+  liberadas), e fica sempre aberto (não recolhe ao abrir um painel);
 - somem o botão **Novo**, o **Metabot**, **Início**, **Sua coleção pessoal**, a seção **Dados**
   (bancos, modelos, métricas), **Lixeira** e favoritos;
 - ao abrir o portal (ou clicar no logo) vão direto para a primeira coleção liberada.
+- Código: `MainNavbarContainer/ClientNavbar.tsx`.
 
 Os grupos marcados ficam na configuração `all-client-group-ids`. Isso só muda a interface: o acesso
 real aos dados continua definido em **Admin → Permissões** (Dados: sem acesso; Coleções: só

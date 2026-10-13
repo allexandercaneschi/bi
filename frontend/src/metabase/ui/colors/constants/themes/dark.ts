@@ -197,6 +197,14 @@ const ALL_DARK = {
   ok: "#3CCB7F",
   warning: "#F5BE4A",
   critical: "#F26B6B",
+  // complementos do design system
+  border: "#2A3750",
+  brandHover: "#5DBBE8",
+  brandSoft: "#0F2D3F",
+  onBrand: "#06131D",
+  okSoft: "#0E2E1F",
+  warningSoft: "#3A2B0E",
+  criticalSoft: "#3A1418",
 };
 
 const allTecnologiasDarkOverrides = {
@@ -224,6 +232,24 @@ const allTecnologiasDarkOverrides = {
   danger: ALL_DARK.critical,
   error: ALL_DARK.critical,
   "feedback-negative": ALL_DARK.critical,
+  "background-success": ALL_DARK.okSoft,
+  "background_surface-success": ALL_DARK.okSoft,
+  "background-warning": ALL_DARK.warningSoft,
+  "background_surface-warning": ALL_DARK.warningSoft,
+  "background-error": ALL_DARK.criticalSoft,
+  "background_surface-error": ALL_DARK.criticalSoft,
+  "background_surface-error-subtle": ALL_DARK.criticalSoft,
+  // bordas 1px
+  border: ALL_DARK.border,
+  "border-neutral": ALL_DARK.border,
+  // azul da marca: texto escuro sobre o azul (botão primário), seleção e hover
+  "text-primary-inverse": ALL_DARK.onBrand,
+  "background-selected": ALL_DARK.brandSoft,
+  "background_surface-selected": ALL_DARK.brandSoft,
+  "brand-hover": ALL_DARK.brandHover,
+  "core-brand-hover": ALL_DARK.brandHover,
+  "text-brand-hover": ALL_DARK.brandHover,
+  "text-hover": ALL_DARK.brandHover,
 };
 
 export const METABASE_DARK_THEME: MetabaseThemeV2 = {
