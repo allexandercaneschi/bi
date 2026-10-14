@@ -80,6 +80,8 @@ docker build --build-arg MB_EDITION=oss --build-arg VERSION=v0.63.18.4-all.0 -t 
 Container avulso `Metabase`, porta 3000, banco de aplicação no **PostgreSQL 18** (variáveis `MB_DB_*`).
 **Drivers extras** (ex.: **Firebird** do ERP) ficam em `/root/metabase-plugins` no servidor e
 precisam ser montados em `/plugins`; sem isso os bancos Firebird param de funcionar.
+O Metabase roda no container com o usuário **2000**, então a pasta precisa pertencer a ele:
+`chown -R 2000:2000 /root/metabase-plugins` (senão ele ignora a pasta e o driver não carrega).
 
 ```bash
 BK=$(cat /root/.ultimo-backup-metabase)          # pasta com metabase.env e o último backup
