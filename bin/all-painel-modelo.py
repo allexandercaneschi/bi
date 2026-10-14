@@ -37,8 +37,8 @@ CLIENT_TAG = "all_cliente"
 TECMAR_CODES = {
     "erp": "6,7,23",
     "tactical": "Tecmar",
-    "zabbix": "30",
-    "bacula": "tecmar-pdceserver-fd",
+    "zabbix": "Tecmar",
+    "bacula": "6",
     "wazuh": "cli_tecmar",
 }
 TECMAR_SERVICES = {"auditoria": True, "navegacao": False}
@@ -48,10 +48,13 @@ EMPRESA_SQL = (
     "AS VARCHAR(60) CHARACTER SET WIN1252) FROM CADCLI CE WHERE CE.CODCLI = {expr})"
 )
 
+# Grupos do Zabbix pelo nome (como aparece na interface); vários nomes separados por vírgula.
+ZABBIX_GROUPS_SQL = "(SELECT zg.groupid FROM hstgrp zg WHERE FIND_IN_SET(zg.name, REPLACE('__ALL_ZABBIX__', ', ', ',')))"
+
 FIREWALL_HOSTS_SQL = (
     "h.hostid IN (SELECT fa.hostid FROM hosts_groups fa "
     "JOIN hosts_groups fb ON fb.hostid = fa.hostid AND fb.groupid = 25 "
-    "WHERE fa.groupid = __ALL_ZABBIX__)"
+    "WHERE fa.groupid IN " + ZABBIX_GROUPS_SQL + ")"
 )
 
 # Perguntas cuja estrutura muda (o nome da empresa passa a vir do ERP).
@@ -83,8 +86,8 @@ CASE_EMPRESA = re.compile(
 RULES = [
     (re.compile(r"IN\s*\(\s*6\s*,\s*7\s*,\s*23\s*\)"), "IN (__ALL_ERP__)"),
     (re.compile(r"h\.host\s*=\s*'tecmar-utm'"), FIREWALL_HOSTS_SQL),
-    (re.compile(r"groupid\s*=\s*30\b"), "groupid = __ALL_ZABBIX__"),
-    (re.compile(r"'tecmar-pdceserver-fd'"), "'__ALL_BACULA__'"),
+    (re.compile(r"groupid\s*=\s*30\b"), "groupid IN " + ZABBIX_GROUPS_SQL),
+    (re.compile(r"c\.name\s*=\s*'tecmar-pdceserver-fd'"), "c.clientid IN (__ALL_BACULA__)"),
     (re.compile(r"\bcli_tecmar\."), "__ALL_WAZUH__."),
     (re.compile(r"=\s*'Tecmar'"), "= '__ALL_TACTICAL__'"),
 ]

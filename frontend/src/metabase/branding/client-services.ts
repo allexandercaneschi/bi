@@ -42,14 +42,16 @@ export const ALL_CLIENT_CODE_FIELDS: AllClientCodeField[] = [
   {
     key: "zabbix",
     label: "Zabbix",
-    description: "ID do grupo de hosts do cliente no Zabbix.",
-    placeholder: "30",
+    description:
+      "Nome do grupo de hosts do cliente, como aparece no Zabbix. Mais de um: separe por vírgula.",
+    placeholder: "Tecmar",
   },
   {
     key: "bacula",
     label: "Bacula",
-    description: "Nome do client (File Daemon) do cliente.",
-    placeholder: "tecmar-pdceserver-fd",
+    description:
+      "ClientId do cliente no Bacula. Mais de um: separe por vírgula.",
+    placeholder: "6",
   },
   {
     key: "wazuh",

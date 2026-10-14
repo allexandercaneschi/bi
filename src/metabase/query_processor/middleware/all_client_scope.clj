@@ -41,8 +41,9 @@
    "squid" "navegacao"})
 
 (def ^:private valid-code-value
-  ;; letras (com acento), números, espaço e . , : _ - ; nada de aspas, ponto e vírgula ou comentários
-  #"^[\p{L}\p{N} _.,:\-]{1,200}$")
+  ;; letras (com acento), números, espaço e . , : _ - / (nomes de grupo do Zabbix podem ter "/");
+  ;; nada de aspas, ponto e vírgula, asterisco, parênteses ou "--" (comentário SQL)
+  #"^(?!.*--)[\p{L}\p{N} _.,:/\-]{1,200}$")
 
 ;;; ------------------------------------------------ configuração -------------------------------------------------
 

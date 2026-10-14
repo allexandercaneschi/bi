@@ -10,7 +10,7 @@ import {
 import { Box, Button, Group, Stack, Switch, Text, TextInput, Title } from "metabase/ui";
 import type { Group as PermissionsGroup } from "metabase-types/api";
 
-const VALID_CODE = /^[\p{L}\p{N} _.,:-]*$/u;
+const VALID_CODE = /^(?!.*--)[\p{L}\p{N} _.,:/-]*$/u;
 
 interface ClientGroupConfigProps {
   group: PermissionsGroup;
@@ -86,7 +86,7 @@ export const ClientGroupConfig = ({ group }: ClientGroupConfigProps) => {
             value={codes[field.key] ?? ""}
             error={
               invalidKeys.includes(field.key)
-                ? t`Use só letras, números, espaço, vírgula, ponto, hífen e sublinhado.`
+                ? t`Use só letras, números, espaço, vírgula, ponto, barra, hífen e sublinhado (sem "--").`
                 : undefined
             }
             onChange={(event) =>

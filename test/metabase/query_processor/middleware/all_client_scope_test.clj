@@ -81,6 +81,19 @@
   (testing "código não configurado falha"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"não está configurado"
                           (scope! (native-query "SELECT __ALL_BACULA__") :user-id 5 :client-group 12))))
+  (testing "nomes de grupo do Zabbix com barra são aceitos"
+    (is (= "SELECT 'Clientes/Tecmar'"
+           (binding [api/*current-user-id* 5]
+             (with-redefs [all-client-scope/normalized-config    (fn [& _] {"12" {:codes {"zabbix" "Clientes/Tecmar"} :services {}}})
+                           all-client-scope/user-client-group-id (fn [_ _] 12)]
+               (get-in (all-client-scope/apply-client-scope (native-query "SELECT '__ALL_ZABBIX__'"))
+                       [:stages 0 :native]))))))
+  (testing "comentário SQL (--) é recusado"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"não permitidos"
+                          (binding [api/*current-user-id* 5]
+                            (with-redefs [all-client-scope/normalized-config    (fn [& _] {"12" {:codes {"erp" "6 -- x"} :services {}}})
+                                          all-client-scope/user-client-group-id (fn [_ _] 12)]
+                              (all-client-scope/apply-client-scope (native-query "SELECT __ALL_ERP__")))))))
   (testing "valores com aspas ou ponto e vírgula são recusados"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"não permitidos"
                           (binding [api/*current-user-id* 5]

@@ -139,8 +139,8 @@ usa **marcadores** no lugar dos códigos do cliente, e o servidor troca cada mar
 |---|---|---|
 | `__ALL_ERP__` | Códigos dos clientes no ERP AML | `6,7,23` |
 | `__ALL_TACTICAL__` | Nome do cliente no Tactical RMM | `Tecmar` |
-| `__ALL_ZABBIX__` | ID do grupo de hosts no Zabbix | `30` |
-| `__ALL_BACULA__` | Client do Bacula | `tecmar-pdceserver-fd` |
+| `__ALL_ZABBIX__` | Nome do grupo de hosts no Zabbix, como aparece na interface (vários: separados por vírgula) | `Tecmar` |
+| `__ALL_BACULA__` | ClientId do Bacula (vários: separados por vírgula) | `6` |
 | `__ALL_WAZUH__` | Schema da auditoria (serviço **auditoria**) | `cli_tecmar` |
 | `__ALL_SQUID__` | Cliente nos logs de navegação (serviço **navegacao**) | `tecmar` |
 
@@ -156,7 +156,7 @@ Quem vê o quê:
 - **Sem login** (link público, embed): consultas com marcadores falham. Não use compartilhamento público
   nesses painéis.
 
-Regras de segurança: valores só com letras, números, espaço e `. , : _ -`; marcador sem código configurado
+Regras de segurança: valores só com letras, números, espaço e `. , : _ - /` (sem `--`); marcador sem código configurado
 faz a consulta falhar; o cache é calculado depois da troca, então resultados de clientes não se misturam.
 Assinaturas de painel rodam com o usuário que as criou: a equipe deve escolher o cliente no filtro da assinatura.
 
