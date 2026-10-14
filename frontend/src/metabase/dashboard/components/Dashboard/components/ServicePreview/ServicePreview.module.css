@@ -1,0 +1,143 @@
+/* ALL Tecnologias: aba de serviço não contratado (prévia desfocada + convite).
+   Cores pelos tokens do design system mapeados no tema (ALL_DARK em themes/dark.ts). */
+
+.root {
+  position: relative;
+  min-height: 560px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  filter: blur(7px);
+  opacity: 0.75;
+  pointer-events: none;
+  user-select: none;
+}
+
+.card {
+  padding: 16px;
+  border: 1px solid var(--mb-color-border-neutral);
+  border-radius: 8px;
+  background: var(--mb-color-background_page-primary);
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font:
+    600 12px/16px "Inter",
+    system-ui,
+    sans-serif;
+  text-transform: uppercase;
+  color: var(--mb-color-text-secondary);
+}
+
+.kpi {
+  margin-top: 8px;
+  font:
+    800 36px/40px "Gilroy",
+    "Inter",
+    system-ui,
+    sans-serif;
+  color: var(--mb-color-text-primary);
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 160px;
+  margin-top: 16px;
+}
+
+.bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  background: var(--mb-color-core-brand);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2fr 3fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--mb-color-border-neutral);
+}
+
+.cell {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--mb-color-text-secondary);
+  opacity: 0.5;
+}
+
+.dotOk,
+.dotWarning,
+.dotCritical {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.dotOk {
+  background: var(--mb-color-feedback-positive);
+}
+
+.dotWarning {
+  background: var(--mb-color-feedback-warning);
+}
+
+.dotCritical {
+  background: var(--mb-color-feedback-negative);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.invite {
+  max-width: 34rem;
+  padding: 32px;
+  border: 1px solid var(--mb-color-border-neutral);
+  border-radius: 12px;
+  background: var(--mb-color-background_page-primary);
+  box-shadow: 0 1px 2px var(--mb-color-shadow-default);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font:
+    600 12px/16px "Inter",
+    system-ui,
+    sans-serif;
+  text-transform: uppercase;
+  color: var(--mb-color-text-brand);
+  background: var(--mb-color-background_surface-selected);
+}
+
+@media (max-width: 720px) {
+  .preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+}

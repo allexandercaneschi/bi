@@ -6,6 +6,8 @@ on:
   push:
     branches:
       - all-branding
+      # branches de teste geram só a tag :teste (para o container Metabase_Teste)
+      - all-filtro-cliente
     paths-ignore:
       - "ALL-FORK.md"
   workflow_dispatch:
@@ -37,11 +39,18 @@ jobs:
       - name: Definir versão e nome da imagem
         id: meta
         run: |
-          VERSION="${BASE_VERSION}-all.${{ github.run_number }}"
           IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/portal-bi"
+          if [ "${GITHUB_REF_NAME}" = "all-branding" ]; then
+            VERSION="${BASE_VERSION}-all.${{ github.run_number }}"
+            TAGS="$IMAGE:$VERSION,$IMAGE:${BASE_VERSION}-all,$IMAGE:latest"
+          else
+            VERSION="${BASE_VERSION}-teste.${{ github.run_number }}"
+            TAGS="$IMAGE:$VERSION,$IMAGE:teste"
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
-          echo "Imagem: $IMAGE:$VERSION"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "Imagem: $TAGS"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -60,9 +69,6 @@ jobs:
           build-args: |
             MB_EDITION=oss
             VERSION=${{ steps.meta.outputs.version }}
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.image }}:${{ env.BASE_VERSION }}-all
-            ${{ steps.meta.outputs.image }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

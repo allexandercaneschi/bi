@@ -1,11 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { t } from "ttag";
 
+import { getServiceForTabName } from "metabase/branding/client-services";
 import { useDashboardContext } from "metabase/dashboard/context";
 import { useSelector } from "metabase/redux";
 import {
   canUserCreateNativeQueries,
   canUserCreateQueries,
+  getAllClientServices,
+  getIsAllClientUser,
 } from "metabase/selectors/user";
 import { Loader } from "metabase/ui";
 import type { DashboardCard } from "metabase-types/api";
@@ -18,6 +21,8 @@ import {
   DashboardEmptyState,
   DashboardEmptyStateWithoutAddPrompt,
 } from "../DashboardEmptyState/DashboardEmptyState";
+
+import { ServicePreview } from "./ServicePreview/ServicePreview";
 
 export const Grid = ({
   className,
@@ -70,6 +75,21 @@ export const Grid = ({
   }, [handleSetEditing, dashboard, onAddQuestion]);
 
   const isEmpty = !dashboardHasCards || (dashboardHasCards && !tabHasCards);
+
+  // ALL Tecnologias: aba de serviço que o grupo do cliente não contratou → prévia desfocada + convite
+  const isAllClientUser = useSelector(getIsAllClientUser);
+  const allClientServices = useSelector(getAllClientServices);
+  const selectedTab = dashboard?.tabs?.find((tab) => tab.id === selectedTabId);
+  const tabService = getServiceForTabName(selectedTab?.name);
+  const isServiceLocked =
+    isAllClientUser &&
+    !isEditing &&
+    tabService != null &&
+    !allClientServices.includes(tabService.key);
+
+  if (isServiceLocked && tabService) {
+    return <ServicePreview service={tabService} />;
+  }
 
   if (isLoadingWithoutCards) {
     return <Loader size="lg" label={t`Loading…`} />;

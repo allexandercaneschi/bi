@@ -353,6 +353,20 @@ See [fonts](../configuring-metabase/fonts.md).")
   :default    []
   :audit      :getter)
 
+;; ALL Tecnologias: configuração de cada grupo de cliente (Admin → Pessoas → Grupos).
+;; Formato: {"<id do grupo>" {"codes"    {"erp" "6,7,23", "zabbix" "30", ...}
+;;                            "services" {"auditoria" true, "navegacao" false}}}
+;; Os códigos substituem os marcadores __ALL_<CÓDIGO>__ no SQL das perguntas (ver
+;; metabase.query-processor.middleware.all-client-scope).
+(defsetting all-client-group-config
+  (deferred-tru "Per client group codes and contracted services (ALL Tecnologias fork).")
+  :encryption :no
+  :visibility :admin
+  :export?    false
+  :type       :json
+  :default    {}
+  :audit      :getter)
+
 (defsetting show-metabase-links
   (deferred-tru "Whether or not to display Metabase links outside admin settings.")
   :type       :boolean

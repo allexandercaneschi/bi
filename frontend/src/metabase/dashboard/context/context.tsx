@@ -14,8 +14,11 @@ import { usePrevious, useUnmount } from "react-use";
 import { isEqual, noop } from "underscore";
 
 import { isAbortError } from "metabase/api/client";
+import { ALL_CLIENT_PARAMETER_SLUG } from "metabase/branding/client-services";
 import { useEmbeddingEntityContext } from "metabase/embedding/context";
 import { getTabHiddenParameterSlugs } from "metabase/embedding/lib/tab-parameters";
+import { useSelector } from "metabase/redux";
+import { getIsAllClientUser } from "metabase/selectors/user";
 import type {
   Dashboard,
   DashboardCard,
@@ -358,8 +361,16 @@ const DashboardContextProviderInner = forwardRef(
       [dashboard, parameters, selectedTabId],
     );
 
+    // ALL Tecnologias: o filtro "Cliente" é só da equipe; o servidor ignora o valor para clientes
+    const isAllClientUser = useSelector(getIsAllClientUser);
     const hideParameters = !isEditing
-      ? [hide_parameters, hiddenParameterSlugs].filter(Boolean).join(",")
+      ? [
+          hide_parameters,
+          hiddenParameterSlugs,
+          isAllClientUser ? ALL_CLIENT_PARAMETER_SLUG : null,
+        ]
+          .filter(Boolean)
+          .join(",")
       : null;
     // For public/static dashboards, we want to make sure that we don't show action cards
     // so we have a filter function here to remove those. We can/will also add this

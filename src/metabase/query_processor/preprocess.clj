@@ -9,6 +9,7 @@
    [metabase.query-processor.middleware.add-implicit-clauses :as qp.add-implicit-clauses]
    [metabase.query-processor.middleware.add-implicit-joins :as qp.add-implicit-joins]
    [metabase.query-processor.middleware.add-remaps :as qp.add-remaps]
+   [metabase.query-processor.middleware.all-client-scope :as all-client-scope]
    [metabase.query-processor.middleware.annotate :as annotate]
    [metabase.query-processor.middleware.auto-bucket-datetimes :as qp.auto-bucket-datetimes]
    [metabase.query-processor.middleware.auto-parse-filter-values :as auto-parse-filter-values]
@@ -71,6 +72,8 @@
    #'measures/adjust
    #'expand-macros/expand-macros
    #'qp.resolve-referenced/resolve-referenced-card-resources
+   ;; ALL Tecnologias: troca os marcadores __ALL_*__ pelos códigos do cliente (antes das variáveis)
+   #'all-client-scope/apply-client-scope
    #'parameters/substitute-parameters
    #'qp.resolve-source-table/resolve-source-tables
    #'qp.auto-bucket-datetimes/auto-bucket-datetimes

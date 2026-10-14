@@ -506,6 +506,11 @@ export type EmbeddingHomepageStatus =
 interface AdminSettings {
   /** ALL Tecnologias: IDs dos grupos marcados como "grupo de cliente". */
   "all-client-group-ids"?: number[];
+  /** ALL Tecnologias: códigos e serviços contratados de cada grupo de cliente (id do grupo → config). */
+  "all-client-group-config"?: Record<
+    string,
+    { codes?: Record<string, string>; services?: Record<string, boolean> }
+  >;
   "active-users-count"?: number;
   "analytics-pii-retention-enabled"?: boolean;
   "custom-geojson-enabled": boolean;

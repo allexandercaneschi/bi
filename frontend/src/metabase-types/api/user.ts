@@ -74,6 +74,8 @@ export interface User extends BaseUser {
   can_write_any_collection: boolean;
   /** ALL Tecnologias: true quando o usuário está em um grupo de cliente (ver users_rest/api.clj). */
   all_is_client?: boolean;
+  /** ALL Tecnologias: serviços contratados pelo grupo de cliente do usuário (ex.: ["auditoria"]). */
+  all_client_services?: string[];
   personal_collection_id: CollectionId;
   tenant_collection_id: CollectionId | null;
   sso_source: "jwt" | "ldap" | "google" | "scim" | "saml" | "oidc" | null;

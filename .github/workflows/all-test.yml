@@ -1,0 +1,53 @@
+name: Testes ALL (filtragem por cliente)
+
+# Roda os testes das mudanças do fork: middleware de filtragem por cliente (backend) e checagem de
+# tipos/lint do frontend. Dispara junto com o build nos branches do fork.
+on:
+  push:
+    branches:
+      - all-branding
+      - all-filtro-cliente
+    paths-ignore:
+      - "ALL-FORK.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-backend
+        with:
+          java-version: "21"
+      - name: Testes do middleware de filtragem por cliente
+        run: ./bin/test-agent :only '[metabase.query-processor.middleware.all-client-scope-test]'
+      - name: Carregar namespaces alterados
+        run: |
+          clojure -M:dev -e "(require 'metabase.query-processor.preprocess 'metabase.users-rest.api 'metabase.appearance.core) (println :ok)"
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prepare-frontend
+      - name: Checagem de tipos
+        run: bun run type-check-pure
+      - name: Lint dos arquivos alterados
+        run: |
+          bunx eslint --no-warn-ignored \
+            frontend/src/metabase/branding/client-services.ts \
+            frontend/src/metabase/admin/people/components/ClientGroupConfig.tsx \
+            frontend/src/metabase/admin/people/components/GroupDetail.tsx \
+            frontend/src/metabase/dashboard/components/Dashboard/components/Grid.tsx \
+            frontend/src/metabase/dashboard/components/Dashboard/components/ServicePreview/ServicePreview.tsx \
+            frontend/src/metabase/dashboard/context/context.tsx \
+            frontend/src/metabase/selectors/user.ts

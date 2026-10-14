@@ -23,6 +23,7 @@ import { Box, Button, Switch, Text } from "metabase/ui";
 import type { Group, Member, Membership, User } from "metabase-types/api";
 
 import { Alert } from "./Alert";
+import { ClientGroupConfig } from "./ClientGroupConfig";
 import { GroupMembersTable } from "./GroupMembersTable";
 
 interface GroupDetailProps {
@@ -183,6 +184,11 @@ const ClientGroupToggle = ({ group }: { group: Group }) => {
         disabled={isLoading}
         onChange={(event) => handleToggle(event.currentTarget.checked)}
       />
+      {isClientGroup && (
+        <Box mt="lg">
+          <ClientGroupConfig group={group} />
+        </Box>
+      )}
     </Box>
   );
 };

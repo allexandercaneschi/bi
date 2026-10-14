@@ -128,3 +128,38 @@ Como os clientes acessam o portal pela rede, a AGPL exige que o código-fonte mo
 disponível para eles. Mantenha este repositório **público** e, se quiser, inclua um link para ele no
 rodapé ou na tela "Sobre". Os avisos de copyright e os arquivos `LICENSE*` do Metabase devem permanecer.
 "Metabase" é marca registrada da Metabase, Inc.; este fork não é afiliado nem endossado por ela.
+
+## Filtragem por cliente (um painel para todos os clientes)
+
+Um único painel "master" e um único conjunto de perguntas servem todos os clientes. O SQL das perguntas
+usa **marcadores** no lugar dos códigos do cliente, e o servidor troca cada marcador antes de rodar a consulta
+(`src/metabase/query_processor/middleware/all_client_scope.clj`, logo antes de `substitute-parameters`).
+
+| Marcador | Código (Admin → Pessoas → Grupos → grupo de cliente) | Exemplo |
+|---|---|---|
+| `__ALL_ERP__` | Códigos dos clientes no ERP AML | `6,7,23` |
+| `__ALL_TACTICAL__` | Nome do cliente no Tactical RMM | `Tecmar` |
+| `__ALL_ZABBIX__` | ID do grupo de hosts no Zabbix | `30` |
+| `__ALL_BACULA__` | Client do Bacula | `tecmar-pdceserver-fd` |
+| `__ALL_WAZUH__` | Schema da auditoria (serviço **auditoria**) | `cli_tecmar` |
+| `__ALL_SQUID__` | Cliente nos logs de navegação (serviço **navegacao**) | `tecmar` |
+
+Exemplo: `WHERE A.CLIENTE_ATD IN (__ALL_ERP__) /* {{all_cliente}} */`
+
+Quem vê o quê:
+- **Usuário de grupo de cliente:** sempre os códigos do próprio grupo; o filtro "Cliente" fica escondido e
+  qualquer valor enviado é ignorado. Abas de serviço não contratado (nome com "Auditoria" ou "Navega")
+  mostram uma prévia desfocada com dados fictícios e os botões de WhatsApp e e-mail comercial; o servidor
+  recusa as consultas desses serviços.
+- **Equipe da ALL:** escolhe o cliente no filtro de painel com slug `cliente`, ligado à variável
+  `{{all_cliente}}` de cada pergunta (pelo nome do grupo). Vê todos os serviços, contratados ou não.
+- **Sem login** (link público, embed): consultas com marcadores falham. Não use compartilhamento público
+  nesses painéis.
+
+Regras de segurança: valores só com letras, números, espaço e `. , : _ -`; marcador sem código configurado
+faz a consulta falhar; o cache é calculado depois da troca, então resultados de clientes não se misturam.
+Assinaturas de painel rodam com o usuário que as criou: a equipe deve escolher o cliente no filtro da assinatura.
+
+Contatos do convite e textos dos serviços: `frontend/src/metabase/branding/client-services.ts`.
+Testes: `test/metabase/query_processor/middleware/all_client_scope_test.clj` (workflow `all-test.yml`).
+Imagem de teste: push no branch `all-filtro-cliente` gera `ghcr.io/<usuário>/portal-bi:teste`.

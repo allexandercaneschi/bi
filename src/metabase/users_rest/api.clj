@@ -359,10 +359,22 @@
 ;; Admins nunca são afetados.
 (defn- add-all-client-flag
   [{:keys [is_superuser group_ids] :as user}]
-  (let [client-ids (into #{} (keep #(when (number? %) (long %))) (appearance/all-client-group-ids))]
-    (assoc user :all_is_client
-           (boolean (and (not is_superuser)
-                         (some #(contains? client-ids (long %)) group_ids))))))
+  (let [client-ids (into #{} (keep #(when (number? %) (long %))) (appearance/all-client-group-ids))
+        group-id   (when-not is_superuser
+                     (some #(when (contains? client-ids (long %)) (long %)) group_ids))
+        services   (when group-id
+                     ;; serviços contratados (Admin → Grupos); as chaves do JSON vêm como keyword
+                     (let [config (appearance/all-client-group-config)
+                           cfg    (or (get config (keyword (str group-id))) (get config (str group-id)))
+                           svcs   (or (:services cfg) (get cfg "services"))]
+                       (->> svcs
+                            (keep (fn [[k v]] (when (true? v) (name k))))
+                            sort
+                            vec)))]
+    (assoc user
+           :all_is_client       (boolean group-id)
+           ;; ALL Tecnologias: serviços contratados pelo grupo de cliente do usuário (ex.: ["auditoria"])
+           :all_client_services (or services []))))
 
 ;; TODO (Cam 2025-11-25) please add a response schema to this API endpoint, it makes it easier for our customers to
 ;; use our API + we will need it when we make auto-TypeScript-signature generation happen

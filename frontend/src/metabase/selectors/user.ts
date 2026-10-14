@@ -12,6 +12,12 @@ export const getUser = (state: State) => state.currentUser;
 export const getIsAllClientUser = (state: State) =>
   Boolean(state.currentUser?.all_is_client);
 
+const NO_SERVICES: string[] = [];
+
+/** ALL Tecnologias: serviços contratados pelo grupo de cliente do usuário. */
+export const getAllClientServices = (state: State): string[] =>
+  state.currentUser?.all_client_services ?? NO_SERVICES;
+
 export const getUserId = createSelector([getUser], (user) => user?.id);
 
 export const getUserIsAdmin = createSelector(
