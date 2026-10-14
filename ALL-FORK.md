@@ -163,3 +163,15 @@ Assinaturas de painel rodam com o usuário que as criou: a equipe deve escolher 
 Contatos do convite e textos dos serviços: `frontend/src/metabase/branding/client-services.ts`.
 Testes: `test/metabase/query_processor/middleware/all_client_scope_test.clj` (workflow `all-test.yml`).
 Imagem de teste: push no branch `all-filtro-cliente` gera `ghcr.io/<usuário>/portal-bi:teste`.
+
+### Criar o painel modelo a partir do painel da Tecmar
+
+`bin/all-painel-modelo.py` (Python 3, sem dependências) copia o painel 19 para a pasta "Modelo (teste)",
+trocando os códigos da Tecmar pelos marcadores, recria abas, posições e o filtro "Cliente", e com
+`--configurar-grupo` cria o grupo "Grupo Tecmar" já marcado como cliente e com os códigos preenchidos.
+
+```bash
+export MB_URL=http://localhost:3001 MB_KEY=mb_...        # Metabase de destino
+python3 bin/all-painel-modelo.py                          # só mostra o plano
+python3 bin/all-painel-modelo.py --aplicar --configurar-grupo
+```
