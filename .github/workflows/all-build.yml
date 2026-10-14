@@ -10,6 +10,7 @@ on:
       - all-filtro-cliente
     paths-ignore:
       - "ALL-FORK.md"
+      - "bin/all-painel-modelo.py"
   workflow_dispatch:
 
 permissions:

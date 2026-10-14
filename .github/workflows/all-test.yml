@@ -9,6 +9,7 @@ on:
       - all-filtro-cliente
     paths-ignore:
       - "ALL-FORK.md"
+      - "bin/all-painel-modelo.py"
   workflow_dispatch:
 
 permissions:
@@ -61,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          bunx eslint --no-warn-ignored -f unix \
+          bunx eslint --no-warn-ignored \
             frontend/src/metabase/branding/client-services.ts \
             frontend/src/metabase/admin/people/components/ClientGroupConfig.tsx \
             frontend/src/metabase/admin/people/components/GroupDetail.tsx \
@@ -69,5 +70,11 @@ jobs:
             frontend/src/metabase/dashboard/components/Dashboard/components/ServicePreview/ServicePreview.tsx \
             frontend/src/metabase/dashboard/context/context.tsx \
             frontend/src/metabase/selectors/user.ts 2>&1 | tee /tmp/eslint.log || FALHOU=1
-          while read -r linha; do echo "::error title=ESLint::$linha"; done < <(grep -E "^\S+:[0-9]+" /tmp/eslint.log)
+          ARQ=""
+          while IFS= read -r linha; do
+            case "$linha" in
+              /*) ARQ="${linha##*/frontend/}" ;;
+              *error*|*warning*) echo "::error title=ESLint ${ARQ}::$linha" ;;
+            esac
+          done < /tmp/eslint.log
           test -z "$FALHOU"
