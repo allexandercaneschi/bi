@@ -106,3 +106,11 @@
                 :services {"auditoria" false "navegacao" false}}
           "13" {:codes {"erp" "40" "wazuh" "cli_outro"} :services {"auditoria" true}}}
          (#'all-client-scope/normalized-config* config))))
+
+(deftest client-group-names-for-staff-test
+  (testing "cliente não recebe a lista de clientes; sem login também não"
+    (with-redefs [all-client-scope/user-client-group-id (fn [_ _] 12)]
+      (binding [api/*current-user-id* 5]
+        (is (nil? (all-client-scope/client-group-names-for-staff)))))
+    (binding [api/*current-user-id* nil]
+      (is (nil? (all-client-scope/client-group-names-for-staff))))))

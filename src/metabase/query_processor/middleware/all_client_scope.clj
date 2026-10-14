@@ -29,6 +29,10 @@
   "Nome da variável SQL usada pela equipe para escolher o cliente."
   "all_cliente")
 
+(def client-parameter-slug
+  "Slug do filtro de painel \"Cliente\" ligado à variável `{{all_cliente}}`."
+  "cliente")
+
 (def ^:private token-pattern
   #"__ALL_([A-Z0-9]+(?:_[A-Z0-9]+)*)__")
 
@@ -219,3 +223,14 @@
           (update :stages (fn [stages] (mapv #(rewrite-stage % group-cfg client? group-id) stages)))
           (cond-> (:parameters query)
             (update :parameters (fn [params] (into [] (remove #(param-targets-client-tag? tag-ids* %)) params))))))))
+
+(defn client-group-names-for-staff
+  "Nomes dos grupos de cliente, em ordem alfabética, para o filtro \"Cliente\" (slug `cliente`) dos painéis.
+  Só a equipe recebe a lista; para usuários de cliente (ou sem login) devolve vazio, para um cliente não ver os
+  nomes dos outros."
+  []
+  (let [user-id api/*current-user-id*]
+    (when (and user-id (not (user-client-group-id user-id api/*is-superuser?*)))
+      (let [ids (client-group-ids)]
+        (when (seq ids)
+          (sort (t2/select-fn-vec :name :model/PermissionsGroup :id [:in ids])))))))

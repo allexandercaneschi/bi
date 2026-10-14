@@ -17,6 +17,7 @@
    [metabase.models.interface :as mi]
    [metabase.parameters.schema :as parameters.schema]
    [metabase.query-processor :as qp]
+   [metabase.query-processor.middleware.all-client-scope :as all-client-scope]
    [metabase.util :as u]
    [metabase.util.i18n :refer [tru]]
    [metabase.util.log :as log]
@@ -47,8 +48,12 @@
                                    normalized-query)) values)))
 
 (defn- static-list-values
-  [{values-source-options :values_source_config :as _param} query]
-  (when-let [values (:values values-source-options)]
+  [{values-source-options :values_source_config :as param} query]
+  ;; ALL Tecnologias: o filtro "Cliente" (slug `cliente`) lista sozinho todos os grupos de cliente para a equipe;
+  ;; usuários de cliente recebem a lista vazia.
+  (when-let [values (if (= (:slug param) all-client-scope/client-parameter-slug)
+                      (or (seq (all-client-scope/client-group-names-for-staff)) [])
+                      (:values values-source-options))]
     (let [wrapped-values (map (fn [v] (if-not (sequential? v) [v] v)) values)]
       {:values          (if query
                           (query-matches query wrapped-values)

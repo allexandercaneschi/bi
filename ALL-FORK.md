@@ -175,3 +175,7 @@ export MB_URL=http://localhost:3001 MB_KEY=mb_...        # Metabase de destino
 python3 bin/all-painel-modelo.py                          # só mostra o plano
 python3 bin/all-painel-modelo.py --aplicar --configurar-grupo
 ```
+
+### Filtro "Cliente" da equipe
+O filtro de painel com slug `cliente` (lista estática) lista sozinho todos os grupos marcados como cliente,
+em ordem alfabética (`metabase.parameters.custom-values`). Usuários de cliente não recebem a lista e não veem o filtro.
