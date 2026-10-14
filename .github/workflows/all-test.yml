@@ -28,7 +28,11 @@ jobs:
         with:
           java-version: "21"
       - name: Testes do middleware de filtragem por cliente
-        run: ./bin/test-agent :only '[metabase.query-processor.middleware.all-client-scope-test]'
+        run: |
+          set -o pipefail
+          ./bin/test-agent :only '[metabase.query-processor.middleware.all-client-scope-test]' 2>&1 | tee /tmp/test.log
+          RESUMO=$(grep -E "Ran [0-9]+ tests|failures|errors|FAIL|ERROR" /tmp/test.log | tail -8 | tr '\n' ' ')
+          echo "::notice title=Testes backend::$RESUMO"
       - name: Carregar namespaces alterados
         run: |
           clojure -M:dev -e "(require 'metabase.query-processor.preprocess 'metabase.users-rest.api 'metabase.appearance.core) (println :ok)"
@@ -39,15 +43,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/prepare-frontend
+      - name: Preparar Java/Clojure (para compilar o ClojureScript)
+        uses: ./.github/actions/prepare-backend
+        with:
+          java-version: "21"
+      - name: Build cljs
+        run: bun run build-pure:cljs
       - name: Checagem de tipos
-        run: bun run type-check-pure
-      - name: Lint dos arquivos alterados
         run: |
-          bunx eslint --no-warn-ignored \
+          set -o pipefail
+          bun run type-check-pure 2>&1 | tee /tmp/tsc.log || true
+          grep -E "branding/client-services|ClientGroupConfig|GroupDetail|components/Grid|ServicePreview|dashboard/context/context|selectors/user|api/settings|api/user" /tmp/tsc.log > /tmp/meus-erros.log || true
+          while read -r linha; do echo "::error title=TS::$linha"; done < /tmp/meus-erros.log
+          echo "::notice title=TS total::$(grep -c 'error TS' /tmp/tsc.log || true) erros no projeto, $(wc -l < /tmp/meus-erros.log) nos arquivos do fork"
+          test ! -s /tmp/meus-erros.log
+      - name: Lint dos arquivos alterados
+        shell: bash
+        run: |
+          set -o pipefail
+          bunx eslint --no-warn-ignored -f unix \
             frontend/src/metabase/branding/client-services.ts \
             frontend/src/metabase/admin/people/components/ClientGroupConfig.tsx \
             frontend/src/metabase/admin/people/components/GroupDetail.tsx \
             frontend/src/metabase/dashboard/components/Dashboard/components/Grid.tsx \
             frontend/src/metabase/dashboard/components/Dashboard/components/ServicePreview/ServicePreview.tsx \
             frontend/src/metabase/dashboard/context/context.tsx \
-            frontend/src/metabase/selectors/user.ts
+            frontend/src/metabase/selectors/user.ts 2>&1 | tee /tmp/eslint.log || FALHOU=1
+          while read -r linha; do echo "::error title=ESLint::$linha"; done < <(grep -E "^\S+:[0-9]+" /tmp/eslint.log)
+          test -z "$FALHOU"
