@@ -75,6 +75,26 @@ Local (máquina com 8+ GB de RAM livres):
 docker build --build-arg MB_EDITION=oss --build-arg VERSION=v0.63.18.4-all.0 -t portal-bi:local .
 ```
 
+## Produção atual (servidor Docker)
+
+Container avulso `Metabase`, porta 3000, banco de aplicação no **PostgreSQL 18** (variáveis `MB_DB_*`).
+**Drivers extras** (ex.: **Firebird** do ERP) ficam em `/root/metabase-plugins` no servidor e
+precisam ser montados em `/plugins`; sem isso os bancos Firebird param de funcionar.
+
+```bash
+BK=$(cat /root/.ultimo-backup-metabase)          # pasta com metabase.env e o último backup
+IMG=ghcr.io/allexandercaneschi/portal-bi:v0.63.18.4-all.<N>
+# backup (cliente do Postgres na MESMA versão do servidor: 18)
+set -a; . $BK/metabase.env; set +a
+docker run --rm -e PGPASSWORD="$MB_DB_PASS" -v $BK:/bk postgres:18 \
+  pg_dump -h "$MB_DB_HOST" -p "${MB_DB_PORT:-5432}" -U "$MB_DB_USER" -d "$MB_DB_DBNAME" -Fc -f /bk/metabase.dump
+# troca
+docker pull $IMG
+docker rm -f Metabase
+docker run -d --name Metabase --restart always -p 3000:3000 \
+  -v /root/metabase-plugins:/plugins --env-file $BK/metabase.env $IMG
+```
+
 ## Deploy no Portainer
 
 Troque só a imagem da stack atual; o banco de aplicação (Postgres/H2) continua o mesmo.
