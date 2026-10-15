@@ -134,13 +134,21 @@
   (let [v (if (sequential? v) (first v) v)]
     (when (some? v) (str/trim (str v)))))
 
+(def ^:dynamic *staff-selected-client*
+  "Cliente escolhido no filtro \"Cliente\" do painel quando a consulta não recebe a variável `all_cliente`
+  diretamente (ex.: listas dos filtros em dropdown, carregadas a partir de uma pergunta). Ligado por
+  `metabase.parameters.dashboard/param-values`. Só vale para a equipe; usuários de cliente usam o próprio grupo."
+  nil)
+
 (defn- selected-client
-  "Valor escolhido pela equipe na variável `all_cliente` (parâmetro enviado ou valor padrão da variável)."
+  "Valor escolhido pela equipe: parâmetro enviado para `all_cliente`, depois o cliente do filtro do painel
+  ([[*staff-selected-client*]]) e por fim o valor padrão da variável."
   [query tag-ids]
   (or (some (fn [param]
               (when (param-targets-client-tag? tag-ids param)
                 (first-value (:value param))))
             (concat (:parameters query) (mapcat :parameters (:stages query))))
+      (first-value *staff-selected-client*)
       (some (fn [tag] (when (client-tag? tag) (first-value (:default tag))))
             (mapcat :template-tags (native-stages query)))))
 

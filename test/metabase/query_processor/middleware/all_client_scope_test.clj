@@ -114,3 +114,10 @@
         (is (nil? (all-client-scope/client-group-names-for-staff)))))
     (binding [api/*current-user-id* nil]
       (is (nil? (all-client-scope/client-group-names-for-staff))))))
+
+(deftest staff-selected-client-binding-test
+  (testing "lista de filtro segue o cliente do painel (ligado) acima do padrão da variável"
+    (let [q (native-query "SELECT __ALL_ERP__ /* {{all_cliente}} */"
+                          :tags [(assoc client-tag :default "Grupo Tecmar")])]
+      (binding [all-client-scope/*staff-selected-client* ["Outro"]]
+        (is (= "SELECT 40 /*  */" (sql-of (scope! q :user-id 1))))))))

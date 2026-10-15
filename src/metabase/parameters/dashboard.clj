@@ -8,6 +8,7 @@
    [metabase.parameters.params :as params]
    [metabase.parameters.schema :as parameters.schema]
    [metabase.query-processor.error-type :as qp.error-type]
+   [metabase.query-processor.middleware.all-client-scope :as all-client-scope]
    [metabase.util :as u]
    [metabase.util.i18n :refer [tru]]
    [metabase.util.malli :as mu]
@@ -129,10 +130,17 @@
        (throw (ex-info (tru "Dashboard does not have a parameter with the ID {0}" (pr-str param-key))
                        {:resolved-params (keys (:resolved-params dashboard))
                         :status-code     400})))
-     (custom-values/parameter->values
-      param
-      query
-      (fn [] (chain-filter dashboard param-key constraint-param-key->value query))))))
+     ;; ALL Tecnologias: listas dos filtros (perguntas com marcadores __ALL_*__) seguem o cliente escolhido
+     ;; no filtro "Cliente" do painel, quando ele vem como filtro ligado (linked filter).
+     (binding [all-client-scope/*staff-selected-client*
+               (some (fn [[pid p]]
+                       (when (= (:slug p) all-client-scope/client-parameter-slug)
+                         (get constraint-param-key->value (str pid))))
+                     (:resolved-params dashboard))]
+       (custom-values/parameter->values
+        param
+        query
+        (fn [] (chain-filter dashboard param-key constraint-param-key->value query)))))))
 
 (defn- find-common-remapping-target
   "Check if ALL field-ids have identical remappings to the same display field.
