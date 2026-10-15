@@ -132,6 +132,19 @@ def rewrite(sql, tab):
                           lambda m: f"{m.group(1)} >= {pg_inicio()} AND {m.group(1)} < {pg_fim()}", out)
         n += n2
 
+    # --- Auditoria: gráfico "por dia" com grade de dias (generate_series) ---
+    grade = ("(now() AT TIME ZONE 'America/Sao_Paulo')::date - 6,\n"
+             "                       (now() AT TIME ZONE 'America/Sao_Paulo')::date, interval '1 day'")
+    if periodo and grade in out:
+        out = out.replace(grade,
+                          f"GREATEST(({pg_inicio(NAV_NOW)})::date, (SELECT COALESCE(min(x.data_hora AT TIME ZONE 'America/Sao_Paulo')::date, "
+                          f"{NAV_NOW}::date) FROM __ALL_WAZUH__.eventos_arquivos x)),\n"
+                          f"                       LEAST(({pg_fim(NAV_NOW)})::date - 1, {NAV_NOW}::date), interval '1 day'")
+        out = out.replace("e.data_hora >= ((now() AT TIME ZONE 'America/Sao_Paulo')::date - 6)::timestamptz",
+                          f"e.data_hora >= ({pg_inicio(NAV_NOW)}) AT TIME ZONE 'America/Sao_Paulo' "
+                          f"AND e.data_hora < ({pg_fim(NAV_NOW)}) AT TIME ZONE 'America/Sao_Paulo'")
+        n += 1
+
     # --- Navegação (demo): 90 dias de dados + período + estação ---
     if "WHERE a.data_hora <= now() AT TIME ZONE 'America/Sao_Paulo'" in out:
         out = out.replace("% 7) * interval '1 day')", "% 90) * interval '1 day')")
