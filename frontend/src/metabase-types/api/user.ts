@@ -76,6 +76,8 @@ export interface User extends BaseUser {
   all_is_client?: boolean;
   /** ALL Tecnologias: serviços contratados pelo grupo de cliente do usuário (ex.: ["auditoria"]). */
   all_client_services?: string[];
+  /** ALL Tecnologias: true quando o grupo de cliente tem mais de uma empresa no ERP (mostra o filtro Empresa). */
+  all_client_multi_company?: boolean;
   personal_collection_id: CollectionId;
   tenant_collection_id: CollectionId | null;
   sso_source: "jwt" | "ldap" | "google" | "scim" | "saml" | "oidc" | null;

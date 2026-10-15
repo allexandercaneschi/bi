@@ -10,6 +10,9 @@
 /** Slug do filtro "Cliente" dos painéis (escondido para usuários de cliente). */
 export const ALL_CLIENT_PARAMETER_SLUG = "cliente";
 
+/** Slug do filtro "Empresa" (escondido para clientes com uma empresa só no ERP). */
+export const ALL_COMPANY_PARAMETER_SLUG = "empresa";
+
 export interface AllClientGroupConfig {
   codes?: Record<string, string>;
   services?: Record<string, boolean>;

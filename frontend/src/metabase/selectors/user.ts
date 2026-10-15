@@ -82,3 +82,7 @@ export const getIsTenantUser = createSelector(
   [getUser],
   (user) => user?.tenant_id != null,
 );
+
+/** ALL Tecnologias: o grupo de cliente do usuário tem mais de uma empresa no ERP. */
+export const getAllClientMultiCompany = (state: State) =>
+  Boolean(state.currentUser?.all_client_multi_company);

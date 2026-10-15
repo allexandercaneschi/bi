@@ -179,3 +179,10 @@ python3 bin/all-painel-modelo.py --aplicar --configurar-grupo
 ### Filtro "Cliente" da equipe
 O filtro de painel com slug `cliente` (lista estática) lista sozinho todos os grupos marcados como cliente,
 em ordem alfabética (`metabase.parameters.custom-values`). Usuários de cliente não recebem a lista e não veem o filtro.
+
+### Filtros por aba (Período, Dispositivo, Empresa)
+`bin/all-filtros-abas.py` acrescenta às perguntas do painel modelo as variáveis `{{periodo}}` (opções fáceis:
+7/30/90 dias, 12 meses, este mês, mês passado, este ano, tudo), `{{dispositivo}}` (texto, "contém") e
+`{{empresa}}` (lista das empresas do cliente no ERP). Cada aba tem seu filtro de Período com padrão próprio.
+O filtro Empresa (slug `empresa`) fica escondido para clientes cujo código ERP tem uma empresa só
+(`all_client_multi_company` no usuário).

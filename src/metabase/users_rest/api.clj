@@ -2,6 +2,7 @@
   "/api/user endpoints"
   (:require
    [clojure.set :as set]
+   [clojure.string :as str]
    [honey.sql.helpers :as sql.helpers]
    [java-time.api :as t]
    [metabase.api.common :as api]
@@ -362,6 +363,11 @@
   (let [client-ids (into #{} (keep #(when (number? %) (long %))) (appearance/all-client-group-ids))
         group-id   (when-not is_superuser
                      (some #(when (contains? client-ids (long %)) (long %)) group_ids))
+        erp-codes  (when group-id
+                     (let [config (appearance/all-client-group-config)
+                           cfg    (or (get config (keyword (str group-id))) (get config (str group-id)))
+                           codes  (or (:codes cfg) (get cfg "codes"))]
+                       (or (:erp codes) (get codes "erp"))))
         services   (when group-id
                      ;; serviços contratados (Admin → Grupos); as chaves do JSON vêm como keyword
                      (let [config (appearance/all-client-group-config)
@@ -372,6 +378,9 @@
                             sort
                             vec)))]
     (assoc user
+           ;; ALL Tecnologias: o filtro Empresa só aparece para grupos com mais de uma empresa no ERP
+           :all_client_multi_company (boolean (and group-id erp-codes
+                                                  (> (count (remove str/blank? (str/split (str erp-codes) #","))) 1)))
            :all_is_client       (boolean group-id)
            ;; ALL Tecnologias: serviços contratados pelo grupo de cliente do usuário (ex.: ["auditoria"])
            :all_client_services (or services []))))

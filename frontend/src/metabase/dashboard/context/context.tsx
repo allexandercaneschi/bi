@@ -14,11 +14,17 @@ import { usePrevious, useUnmount } from "react-use";
 import { isEqual, noop } from "underscore";
 
 import { isAbortError } from "metabase/api/client";
-import { ALL_CLIENT_PARAMETER_SLUG } from "metabase/branding/client-services";
+import {
+  ALL_CLIENT_PARAMETER_SLUG,
+  ALL_COMPANY_PARAMETER_SLUG,
+} from "metabase/branding/client-services";
 import { useEmbeddingEntityContext } from "metabase/embedding/context";
 import { getTabHiddenParameterSlugs } from "metabase/embedding/lib/tab-parameters";
 import { useSelector } from "metabase/redux";
-import { getIsAllClientUser } from "metabase/selectors/user";
+import {
+  getAllClientMultiCompany,
+  getIsAllClientUser,
+} from "metabase/selectors/user";
 import type {
   Dashboard,
   DashboardCard,
@@ -363,11 +369,15 @@ const DashboardContextProviderInner = forwardRef(
 
     // ALL Tecnologias: o filtro "Cliente" é só da equipe; o servidor ignora o valor para clientes
     const isAllClientUser = useSelector(getIsAllClientUser);
+    const isAllMultiCompany = useSelector(getAllClientMultiCompany);
     const hideParameters = !isEditing
       ? [
           hide_parameters,
           hiddenParameterSlugs,
           isAllClientUser ? ALL_CLIENT_PARAMETER_SLUG : null,
+          isAllClientUser && !isAllMultiCompany
+            ? ALL_COMPANY_PARAMETER_SLUG
+            : null,
         ]
           .filter(Boolean)
           .join(",")
