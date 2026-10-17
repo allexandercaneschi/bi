@@ -186,3 +186,20 @@ em ordem alfabética (`metabase.parameters.custom-values`). Usuários de cliente
 `{{empresa}}` (lista das empresas do cliente no ERP). Cada aba tem seu filtro de Período com padrão próprio.
 O filtro Empresa (slug `empresa`) fica escondido para clientes cujo código ERP tem uma empresa só
 (`all_client_multi_company` no usuário).
+
+A versão atual é `bin/all-filtros-abas-v2.py`: todos os filtros são dropdown (perguntas "Lista · ..." com os
+marcadores `__ALL_*__`, então cada cliente só vê os próprios valores) ou calendário (Data inicial / Data final).
+As listas da equipe seguem o cliente escolhido no filtro Cliente (filtros ligados). `bin/all-testa-filtros.py`
+roda todas as perguntas sem filtro, com datas e com o primeiro valor de cada lista.
+
+### Publicar o painel do teste na produção
+O painel é montado e testado no Metabase_Teste e depois publicado com `bin/all-publicar-painel.py`. O script
+copia o painel, as perguntas e as listas, trocando os ids. Rodando de novo, atualiza no lugar (perguntas e abas
+casadas pelo nome), então os links continuam valendo. `--grupos` copia também os códigos e serviços dos grupos
+de cliente. Sem `--aplicar` só mostra o que faria.
+
+```bash
+MB_SRC_URL=http://localhost:3002 MB_SRC_KEY=<chave do teste> \
+MB_URL=http://localhost:3000 MB_KEY=<chave da produção> \
+python3 all-publicar-painel.py --grupos            # confira e repita com --aplicar
+```
