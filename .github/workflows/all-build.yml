@@ -1,16 +1,20 @@
 name: Build ALL Portal BI (Metabase OSS fork)
 
 # Gera a imagem Docker do fork e publica no GitHub Container Registry (ghcr.io).
-# Dispara a cada push no branch all-branding, ou manualmente em Actions → Run workflow.
+#
+# - Push nos branches (ou Run workflow manual): só a tag :teste, usada no Metabase_Teste. Não mexe no :latest.
+# - Release publicado no GitHub (ex.: v1.0.0): tags :latest e :v1.0.0, usadas na produção.
+# Assim o :latest nunca muda sozinho: só quando uma versão testada é publicada.
 on:
   push:
     branches:
       - all-branding
-      # branches de teste geram só a tag :teste (para o container Metabase_Teste)
       - all-filtro-cliente
     paths-ignore:
       - "ALL-FORK.md"
-      - "bin/all-painel-modelo.py"
+      - "bin/**"
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -41,9 +45,10 @@ jobs:
         id: meta
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/portal-bi"
-          if [ "${GITHUB_REF_NAME}" = "all-branding" ]; then
-            VERSION="${BASE_VERSION}-all.${{ github.run_number }}"
-            TAGS="$IMAGE:$VERSION,$IMAGE:${BASE_VERSION}-all,$IMAGE:latest"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            REL="${GITHUB_REF_NAME}"                       # ex.: v1.0.0
+            VERSION="${BASE_VERSION}-all-${REL#v}"         # versão mostrada em "Sobre o Metabase"
+            TAGS="$IMAGE:$REL,$IMAGE:latest"
           else
             VERSION="${BASE_VERSION}-teste.${{ github.run_number }}"
             TAGS="$IMAGE:$VERSION,$IMAGE:teste"

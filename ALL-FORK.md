@@ -63,12 +63,18 @@ visualização da pasta do cliente).
 
 ## Build
 
-O GitHub Actions gera a imagem automaticamente a cada push no branch `all-branding`
-(ou manualmente em **Actions → Build ALL Portal BI → Run workflow**). O build leva ~40–90 min.
+O GitHub Actions gera a imagem em `ghcr.io/allexandercaneschi/portal-bi`. O `latest` só muda quando uma
+versão é publicada, então um re-pull na produção nunca traz algo que não foi testado.
 
-Tags geradas em `ghcr.io/<seu-usuario>/portal-bi`:
-- `v0.63.18.4-all.<N>` — uma por build (N = número da execução); use esta no Portainer
-- `v0.63.18.4-all` e `latest` — sempre o build mais recente
+- **Teste:** cada push em `all-branding` (ou `all-filtro-cliente`, ou Run workflow manual) gera
+  `:teste` e `:v0.63.18.4-teste.<N>`. Use no Metabase_Teste. Não mexe no `latest`.
+- **Produção:** depois de testar, crie uma versão no GitHub: **Releases → Draft a new release**, tag nova
+  (ex.: `v1.0.0`), target `all-branding`, **Publish release**. O build gera `:latest` e `:v1.0.0`
+  (no "Sobre o Metabase" aparece `v0.63.18.4-all-1.0.0`). Leva uns 20 a 30 minutos (aba Actions).
+- **Atualizar a produção:** backup do banco e re-pull do `:latest` (Portainer: "Update the stack" com
+  "Re-pull image"; container avulso: comandos abaixo).
+- **Voltar uma versão:** use a tag da versão anterior (ex.: `:v1.0.0`) no lugar de `latest`, restaurando o
+  backup do banco se a versão nova tiver migrations (troca de versão base do Metabase).
 
 Local (máquina com 8+ GB de RAM livres):
 ```bash
@@ -85,7 +91,7 @@ O Metabase roda no container com o usuário **2000**, então a pasta precisa per
 
 ```bash
 BK=$(cat /root/.ultimo-backup-metabase)          # pasta com metabase.env e o último backup
-IMG=ghcr.io/allexandercaneschi/portal-bi:v0.63.18.4-all.<N>
+IMG=ghcr.io/allexandercaneschi/portal-bi:latest     # ou :vX.Y.Z para fixar/voltar uma versão
 # backup (cliente do Postgres na MESMA versão do servidor: 18)
 set -a; . $BK/metabase.env; set +a
 docker run --rm -e PGPASSWORD="$MB_DB_PASS" -v $BK:/bk postgres:18 \
@@ -104,7 +110,7 @@ Troque só a imagem da stack atual; o banco de aplicação (Postgres/H2) continu
 ```yaml
 services:
   metabase:
-    image: ghcr.io/<seu-usuario>/portal-bi:v0.63.18.4-all.<N>
+    image: ghcr.io/allexandercaneschi/portal-bi:latest   # ou :vX.Y.Z para voltar uma versão
     # ...mantenha environment, volumes e portas que você já usa
 ```
 
