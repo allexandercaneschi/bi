@@ -5,7 +5,7 @@ name: Testes ALL (filtragem por cliente)
 on:
   push:
     branches:
-      - all-branding
+      - all/main
       - all-filtro-cliente
     paths-ignore:
       - "ALL-FORK.md"

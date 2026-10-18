@@ -3,7 +3,7 @@
 Fork do [Metabase](https://github.com/metabase/metabase) open source (AGPL-3.0) com a identidade
 visual da ALL Tecnologias. **Nenhum código da pasta `enterprise/` é usado ou alterado.**
 
-Base atual: `v0.63.18.4` · Branch: `all-branding`
+Base atual: `v0.63.18.4` · Branch: `all/main`
 
 ## O que foi alterado
 
@@ -66,10 +66,10 @@ visualização da pasta do cliente).
 O GitHub Actions gera a imagem em `ghcr.io/allexandercaneschi/portal-bi`. O `latest` só muda quando uma
 versão é publicada, então um re-pull na produção nunca traz algo que não foi testado.
 
-- **Teste:** cada push em `all-branding` (ou `all-filtro-cliente`, ou Run workflow manual) gera
+- **Teste:** cada push em `all/main` (ou `all-filtro-cliente`, ou Run workflow manual) gera
   `:teste` e `:v0.63.18.4-teste.<N>`. Use no Metabase_Teste. Não mexe no `latest`.
 - **Produção:** depois de testar, crie uma versão no GitHub: **Releases → Draft a new release**, tag nova
-  (ex.: `v1.0.0`), target `all-branding`, **Publish release**. O build gera `:latest` e `:v1.0.0`
+  (ex.: `v1.0.0`), target `all/main`, **Publish release**. O build gera `:latest` e `:v1.0.0`
   (no "Sobre o Metabase" aparece `v0.63.18.4-all-1.0.0`). Leva uns 20 a 30 minutos (aba Actions).
 - **Atualizar a produção:** backup do banco e re-pull do `:latest` (Portainer: "Update the stack" com
   "Re-pull image"; container avulso: comandos abaixo).
@@ -125,7 +125,7 @@ Depois do primeiro start:
 ```bash
 bin/all-upgrade.sh v0.63.18.4 v0.64.1
 # edite BASE_VERSION em .github/workflows/all-build.yml para v0.64.1 e faça commit
-git push --force-with-lease origin all-branding   # dispara o build
+git push --force-with-lease origin all/main   # dispara o build
 ```
 
 ## Licença (AGPL-3.0)

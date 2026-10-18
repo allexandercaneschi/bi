@@ -5,14 +5,14 @@
 #
 # O que faz:
 #   1. Busca as tags do upstream (metabase/metabase)
-#   2. Reaplica os commits do branch all-branding em cima da nova tag
+#   2. Reaplica os commits do branch all/main em cima da nova tag
 #   3. Resolve sozinho os conflitos em .github/workflows (sempre removemos os do upstream)
 #   4. Para em qualquer outro conflito para você resolver à mão
 set -euo pipefail
 
 OLD_TAG="${1:?informe a tag atual, ex.: v0.63.18.4}"
 NEW_TAG="${2:?informe a nova tag, ex.: v0.64.1}"
-BRANCH="all-branding"
+BRANCH="all/main"
 
 git remote get-url upstream >/dev/null 2>&1 \
   || git remote add upstream https://github.com/metabase/metabase.git

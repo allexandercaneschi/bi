@@ -8,7 +8,7 @@ name: Build ALL Portal BI (Metabase OSS fork)
 on:
   push:
     branches:
-      - all-branding
+      - all/main
       - all-filtro-cliente
     paths-ignore:
       - "ALL-FORK.md"
