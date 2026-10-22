@@ -105,19 +105,20 @@
 
 (deftest ^:synchronized create-user-and-sync-groups-test
   (testing "with auto creation on, the user is created, named and put in the mapped groups"
-    (mt/with-temp [:model/PermissionsGroup {tecmar-id :id} {:name "Cliente Tecmar (all-oidc test)"}
-                   :model/PermissionsGroup {other-id :id}  {:name "Outro (all-oidc test)"}]
+    (mt/test-helpers-set-global-values!
       (with-all-oidc-config! [:mb-all-oidc-auto-create-users "true"
                               :mb-all-oidc-group-mappings
                               "{\"bi-tecmar\": [\"Cliente Tecmar (all-oidc test)\"], \"bi-outro\": \"Outro (all-oidc test)\"}"]
-        (with-fake-idp!
-          (mt/with-model-cleanup [:model/User]
-            (t2/delete! :model/User :email test-email)
-            (let [response (login! 302)
-                  user     (t2/select-one :model/User :email test-email)
-                  groups   (t2/select-fn-set :group_id :model/PermissionsGroupMembership
-                                             :user_id (:id user) :group_id [:in [tecmar-id other-id]])]
-              (is (sso.test-helpers/successful-login? response))
-              (is (= "/" (get-in response [:headers "Location"])))
-              (is (= ["Maria" "da Silva" :all-oidc] ((juxt :first_name :last_name :sso_source) user)))
-              (is (= #{tecmar-id} groups)))))))))
+        (mt/with-temp [:model/PermissionsGroup {tecmar-id :id} {:name "Cliente Tecmar (all-oidc test)"}
+                       :model/PermissionsGroup {other-id :id}  {:name "Outro (all-oidc test)"}]
+          (with-fake-idp!
+            (mt/with-model-cleanup [:model/User]
+              (t2/delete! :model/User :email test-email)
+              (let [response (login! 302)
+                    user     (t2/select-one :model/User :email test-email)
+                    groups   (t2/select-fn-set :group_id :model/PermissionsGroupMembership
+                                               :user_id (:id user) :group_id [:in [tecmar-id other-id]])]
+                (is (sso.test-helpers/successful-login? response))
+                (is (= "/" (get-in response [:headers "Location"])))
+                (is (= ["Maria" "da Silva" :all-oidc] ((juxt :first_name :last_name :sso_source) user)))
+                (is (= #{tecmar-id} groups))))))))))
