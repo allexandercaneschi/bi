@@ -115,7 +115,7 @@
             (mt/with-model-cleanup [:model/User]
               (t2/delete! :model/User :email test-email)
               (let [response (login! 302)
-                    user     (t2/select-one :model/User :email test-email)
+                    user     (t2/select-one [:model/User :id :first_name :last_name :sso_source] :email test-email)
                     groups   (t2/select-fn-set :group_id :model/PermissionsGroupMembership
                                                :user_id (:id user) :group_id [:in [tecmar-id other-id]])]
                 (is (sso.test-helpers/successful-login? response))
