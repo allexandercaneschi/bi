@@ -2204,6 +2204,7 @@
   sso
   {:team "UX West"
    :api     #{metabase.sso.api
+              metabase.sso.api.all-oidc
               metabase.sso.api.slack-connect
               metabase.sso.core
               metabase.sso.init
@@ -2220,7 +2221,7 @@
               startup
               system
               util}
-   :model-imports #{:model/AuthIdentity :model/PermissionsGroupMembership}}
+   :model-imports #{:model/AuthIdentity :model/PermissionsGroup :model/PermissionsGroupMembership}}
 
   staleness
   {:team "UX West"

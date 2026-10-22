@@ -298,6 +298,75 @@
 (defmethod startup/def-startup-validation! ::oidc-allowed-networks [_]
   (oidc-allowed-networks))
 
+;;;
+;;; ALL Tecnologias: login via Authentik (OIDC) na edição open source.
+;;; Configurado só por variáveis de ambiente (MB_ALL_OIDC_*). Ver metabase.sso.providers.all-oidc.
+;;;
+
+(defsetting all-oidc-issuer
+  (deferred-tru "OIDC issuer URL (the Authentik application) for the ALL Tecnologias SSO login.")
+  :encryption :no
+  :visibility :internal
+  :export?    false
+  :setter     :none
+  :audit      :never)
+
+(defsetting all-oidc-client-id
+  (deferred-tru "OIDC client ID for the ALL Tecnologias SSO login.")
+  :encryption :no
+  :visibility :internal
+  :export?    false
+  :setter     :none
+  :audit      :never)
+
+(defsetting all-oidc-client-secret
+  (deferred-tru "OIDC client secret for the ALL Tecnologias SSO login.")
+  :encryption :when-encryption-key-set
+  :visibility :internal
+  :export?    false
+  :setter     :none
+  :audit      :never)
+
+(defsetting all-oidc-enabled
+  (deferred-tru "Is the ALL Tecnologias SSO login (OIDC) configured?")
+  :type       :boolean
+  :visibility :public
+  :export?    false
+  :setter     :none
+  :audit      :never
+  :getter     (fn []
+                (boolean (and (seq (all-oidc-issuer))
+                              (seq (all-oidc-client-id))
+                              (seq (all-oidc-client-secret))))))
+
+(defsetting all-oidc-button-label
+  (deferred-tru "Label of the SSO button on the login page.")
+  :encryption :no
+  :visibility :public
+  :export?    false
+  :setter     :none
+  :audit      :never
+  :default    "Entrar com SSO")
+
+(defsetting all-oidc-auto-create-users
+  (deferred-tru "Create the Metabase account on the first SSO login.")
+  :type       :boolean
+  :visibility :internal
+  :export?    false
+  :setter     :none
+  :audit      :never
+  :default    false)
+
+(defsetting all-oidc-group-mappings
+  (deferred-tru "JSON mapping of identity provider group names to Metabase group names.")
+  :encryption :no
+  :type       :json
+  :visibility :internal
+  :export?    false
+  :setter     :none
+  :audit      :never
+  :default    {})
+
 (defn- ee-sso-configured? []
   (when config/ee-available?
     (or (setting/get :other-sso-enabled?)
@@ -308,6 +377,7 @@
   []
   (or (google-auth-enabled)
       (ldap-enabled)
+      (all-oidc-enabled)
       (ee-sso-configured?)))
 
 (defn sso-source-enabled?
@@ -317,8 +387,9 @@
   [sso-source]
   (boolean
    (case (keyword sso-source)
-     :google (google-auth-enabled)
-     :ldap   (ldap-enabled)
+     :google   (google-auth-enabled)
+     :ldap     (ldap-enabled)
+     :all-oidc (all-oidc-enabled)
      ;; Enterprise SSO providers: setting/get respects the :feature flag on each
      ;; setting — returning the default (false) when the feature is unlicensed (e.g.,
      ;; after license downgrade), so users aren't locked out of password reset.

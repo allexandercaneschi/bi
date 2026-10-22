@@ -1,5 +1,6 @@
 (ns metabase.sso.init
   (:require
+   [metabase.sso.providers.all-oidc]
    [metabase.sso.providers.google]
    [metabase.sso.providers.ldap]
    [metabase.sso.providers.oidc]
