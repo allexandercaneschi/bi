@@ -2,6 +2,7 @@
   (:require
    [metabase.api.util.handlers :as handlers]
    [metabase.config.core :as config]
+   [metabase.sso.api.all-oidc :as all-oidc.api]
    [metabase.sso.api.slack-connect :as slack-connect.api]
    [ring.util.response :as response]))
 
@@ -25,6 +26,8 @@
   (handlers/routes
    ;; Slack Connect routes always available (OSS)
    (handlers/route-map-handler {"/auth" {"/sso" {"/slack-connect" slack-connect.api/routes}}})
+   ;; ALL Tecnologias: login via Authentik (OIDC), always available
+   (handlers/route-map-handler {"/auth" {"/sso" {"/all-oidc" all-oidc.api/routes}}})
    ;; Other SSO routes require EE
    (if (and config/ee-available? (not *compile-files*))
      (requiring-resolve 'metabase-enterprise.sso.api.routes/routes)

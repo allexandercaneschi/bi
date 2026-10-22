@@ -7,6 +7,7 @@ on:
     branches:
       - all/main
       - all-filtro-cliente
+      - feat/sso-authentik
     paths-ignore:
       - "ALL-FORK.md"
       - "bin/all-painel-modelo.py"
@@ -31,12 +32,12 @@ jobs:
       - name: Testes do middleware de filtragem por cliente
         run: |
           set -o pipefail
-          ./bin/test-agent :only '[metabase.query-processor.middleware.all-client-scope-test]' 2>&1 | tee /tmp/test.log
+          ./bin/test-agent :only '[metabase.query-processor.middleware.all-client-scope-test metabase.sso.integrations.all-oidc-test]' 2>&1 | tee /tmp/test.log
           RESUMO=$(grep -E "Ran [0-9]+ tests|failures|errors|FAIL|ERROR" /tmp/test.log | tail -8 | tr '\n' ' ')
           echo "::notice title=Testes backend::$RESUMO"
       - name: Carregar namespaces alterados
         run: |
-          clojure -M:dev -e "(require 'metabase.query-processor.preprocess 'metabase.users-rest.api 'metabase.appearance.core) (println :ok)"
+          clojure -M:dev -e "(require 'metabase.query-processor.preprocess 'metabase.users-rest.api 'metabase.appearance.core 'metabase.server.auth-wrapper 'metabase.sso.init) (println :ok)"
 
   frontend:
     runs-on: ubuntu-latest
@@ -54,7 +55,7 @@ jobs:
         run: |
           set -o pipefail
           bun run type-check-pure 2>&1 | tee /tmp/tsc.log || true
-          grep -E "branding/client-services|ClientGroupConfig|GroupDetail|components/Grid|ServicePreview|dashboard/context/context|selectors/user|api/settings|api/user" /tmp/tsc.log > /tmp/meus-erros.log || true
+          grep -E "branding/client-services|ClientGroupConfig|GroupDetail|components/Grid|ServicePreview|dashboard/context/context|selectors/user|api/settings|api/user|AllOidcButton|auth/all-oidc" /tmp/tsc.log > /tmp/meus-erros.log || true
           while read -r linha; do echo "::error title=TS::$linha"; done < /tmp/meus-erros.log
           echo "::notice title=TS total::$(grep -c 'error TS' /tmp/tsc.log || true) erros no projeto, $(wc -l < /tmp/meus-erros.log) nos arquivos do fork"
           test ! -s /tmp/meus-erros.log
@@ -69,7 +70,9 @@ jobs:
             frontend/src/metabase/dashboard/components/Dashboard/components/Grid.tsx \
             frontend/src/metabase/dashboard/components/Dashboard/components/ServicePreview/ServicePreview.tsx \
             frontend/src/metabase/dashboard/context/context.tsx \
-            frontend/src/metabase/selectors/user.ts 2>&1 | tee /tmp/eslint.log || FALHOU=1
+            frontend/src/metabase/selectors/user.ts \
+            frontend/src/metabase/auth/components/AllOidcButton/AllOidcButton.tsx \
+            frontend/src/metabase/plugins/builtin/auth/all-oidc.ts 2>&1 | tee /tmp/eslint.log || FALHOU=1
           ARQ=""
           while IFS= read -r linha; do
             case "$linha" in

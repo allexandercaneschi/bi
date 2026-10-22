@@ -608,6 +608,10 @@ interface PublicSettings {
   "enable-pivoted-exports": boolean;
   "enable-sandboxes?": boolean;
   engines: Record<EngineKey, Engine>;
+  /** ALL Tecnologias: login único via Authentik (OIDC) configurado. */
+  "all-oidc-enabled"?: boolean;
+  /** ALL Tecnologias: texto do botão de login único. */
+  "all-oidc-button-label"?: string;
   "google-auth-client-id": string | null;
   "google-auth-enabled": boolean;
   "has-user-setup": boolean;
