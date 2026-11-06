@@ -313,6 +313,24 @@ export function hasMatchingParameters({
   });
 }
 
+// ALL Tecnologias: as listas dos filtros que vêm de uma pergunta (values_source_type "card")
+// sempre recebem o valor do filtro "Cliente" (slug "cliente"). O Metabase não permite "filtros
+// ligados" nesse tipo de lista (metabase#33892), e sem isso o fork não sabe qual cliente a equipe
+// escolheu e usa o valor padrão da variável {{all_cliente}}. Usuários de grupo de cliente não são
+// afetados: o fork sempre usa o grupo deles (all_client_scope.clj).
+const ALL_CLIENT_PARAMETER_SLUG = "cliente";
+
+function isAllClientFilteringParameter(
+  parameter: UiParameter | undefined,
+  candidate: UiParameter,
+) {
+  return (
+    parameter?.values_source_type === "card" &&
+    candidate.id !== parameter.id &&
+    candidate.slug === ALL_CLIENT_PARAMETER_SLUG
+  );
+}
+
 export function getFilteringParameterValuesMap(
   parameter: UiParameter,
   parameters: UiParameter[],
@@ -320,7 +338,12 @@ export function getFilteringParameterValuesMap(
   const { filteringParameters = [] } = parameter || {};
   const filteringParameterValues = Object.fromEntries(
     parameters
-      .filter((p) => filteringParameters.includes(p.id) && p.value != null)
+      .filter(
+        (p) =>
+          (filteringParameters.includes(p.id) ||
+            isAllClientFilteringParameter(parameter, p)) &&
+          p.value != null,
+      )
       .map((p) => [p.id, p.value]),
   );
 

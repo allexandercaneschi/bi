@@ -371,6 +371,33 @@ describe("metabase/parameters/utils/dashboards", () => {
       });
     });
 
+    it("ALL: should always send the Cliente filter to lists sourced from a question", () => {
+      const cliente = createMockParameter({
+        id: "cli",
+        slug: "cliente",
+        value: ["Racional Eletrica"],
+      });
+      const cardSourced = createMockUiParameter({
+        id: "disp",
+        values_source_type: "card",
+      });
+      const fieldSourced = createMockUiParameter({ id: "disp" });
+      const allParameters = [...parameters, cliente];
+
+      expect(
+        getFilteringParameterValuesMap(cardSourced, allParameters),
+      ).toEqual({ cli: ["Racional Eletrica"] });
+      expect(
+        getFilteringParameterValuesMap(fieldSourced, allParameters),
+      ).toEqual({});
+      expect(
+        getFilteringParameterValuesMap(
+          createMockUiParameter({ id: "cli", slug: "cliente", values_source_type: "card" }),
+          allParameters,
+        ),
+      ).toEqual({});
+    });
+
     it("should handle a missing `filteringParameters` prop gracefully", () => {
       expect(
         getFilteringParameterValuesMap(
