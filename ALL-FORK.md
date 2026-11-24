@@ -149,12 +149,13 @@ usa **marcadores** no lugar dos códigos do cliente, e o servidor troca cada mar
 | `__ALL_BACULA__` | ClientId do Bacula (vários: separados por vírgula) | `6` |
 | `__ALL_WAZUH__` | Schema da auditoria (serviço **auditoria**) | `cli_tecmar` |
 | `__ALL_SQUID__` | Cliente nos logs de navegação (serviço **navegacao**) | `tecmar` |
+| `__ALL_WATCHER__` | Slug do cliente no ALL Watcher (serviço **monitoramento**, aba "Monitoramento…") | `tecmar` |
 
 Exemplo: `WHERE A.CLIENTE_ATD IN (__ALL_ERP__) /* {{all_cliente}} */`
 
 Quem vê o quê:
 - **Usuário de grupo de cliente:** sempre os códigos do próprio grupo; o filtro "Cliente" fica escondido e
-  qualquer valor enviado é ignorado. Abas de serviço não contratado (nome com "Auditoria" ou "Navega")
+  qualquer valor enviado é ignorado. Abas de serviço não contratado (nome com "Auditoria", "Navega" ou "Monitora")
   mostram uma prévia desfocada com dados fictícios e os botões de WhatsApp e e-mail comercial; o servidor
   recusa as consultas desses serviços.
 - **Equipe da ALL:** escolhe o cliente no filtro de painel com slug `cliente`, ligado à variável

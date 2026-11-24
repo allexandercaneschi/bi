@@ -42,7 +42,8 @@
 (def code->service
   "Códigos que pertencem a serviços contratados à parte. Os demais códigos são sempre liberados."
   {"wazuh" "auditoria"
-   "squid" "navegacao"})
+   "squid" "navegacao"
+   "watcher" "monitoramento"})
 
 (def ^:private valid-code-value
   ;; letras (com acento), números, espaço e . , : _ - / (nomes de grupo do Zabbix podem ter "/");

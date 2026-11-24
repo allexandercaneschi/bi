@@ -68,6 +68,13 @@ export const ALL_CLIENT_CODE_FIELDS: AllClientCodeField[] = [
     description: "Identificador do cliente nos logs de navegação.",
     placeholder: "tecmar",
   },
+  {
+    key: "watcher",
+    label: "ALL Watcher (monitoramento de atividade)",
+    description:
+      "Identificador (slug) do cliente no painel do ALL Watcher, em letras minúsculas.",
+    placeholder: "tecmar",
+  },
 ];
 
 export interface AllClientService {
@@ -94,6 +101,13 @@ export const ALL_CLIENT_SERVICES: AllClientService[] = [
     pitch:
       "Veja quais sites são acessados na empresa, por quem e quanto tempo. Relatórios por usuário e por categoria, com bloqueios sob medida.",
     tabNamePattern: /navega/i,
+  },
+  {
+    key: "monitoramento",
+    title: "Monitoramento de Atividade",
+    pitch:
+      "Saiba como o tempo da equipe é usado no computador: quanto se trabalha, em quais programas e sites, e como foi o dia de cada colaborador. Resumos claros, sem termos técnicos, e telas capturadas para conferir.",
+    tabNamePattern: /monitora/i,
   },
 ];
 
