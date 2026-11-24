@@ -151,6 +151,12 @@ usa **marcadores** no lugar dos códigos do cliente, e o servidor troca cada mar
 | `__ALL_SQUID__` | Cliente nos logs de navegação (serviço **navegacao**) | `tecmar` |
 | `__ALL_WATCHER__` | Slug do cliente no ALL Watcher (serviço **monitoramento**, aba "Monitoramento…") | `tecmar` |
 
+**Abas dentro de abas.** Um painel mostra sub-abas quando o nome da aba tem o formato `Grupo › Sub-aba`
+(separador " › " com espaços; ex.: `Monitoramento de atividade › Visão geral`). A primeira linha de abas mostra os
+grupos e, ao escolher um grupo com sub-abas, aparece uma segunda linha com os nomes curtos. Abas sem o separador
+funcionam como sempre. Só vale na visualização; na edição do painel as abas aparecem planas, com o nome completo.
+Código: `DashboardTabs.tsx`.
+
 Exemplo: `WHERE A.CLIENTE_ATD IN (__ALL_ERP__) /* {{all_cliente}} */`
 
 Quem vê o quê:

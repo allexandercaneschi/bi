@@ -17,6 +17,44 @@ import { isVirtualDashCard } from "metabase/utils/dashboard";
 import S from "./DashboardTabs.module.css";
 import { useDashboardTabs } from "./use-dashboard-tabs";
 
+/**
+ * ALL Tecnologias: abas dentro de abas. Uma aba cujo nome tem o formato "Grupo › Sub-aba" vira uma sub-aba
+ * do grupo "Grupo": a primeira linha mostra os grupos e, quando o grupo selecionado tem sub-abas, uma segunda
+ * linha mostra só os nomes delas. Abas sem o separador continuam como sempre. Só vale na visualização;
+ * na edição as abas aparecem planas, com o nome completo.
+ */
+const TAB_GROUP_SEPARATOR = " › ";
+
+interface GroupedTab {
+  id: number;
+  label: string;
+  isNested: boolean;
+}
+
+interface TabGroup {
+  name: string;
+  tabs: GroupedTab[];
+}
+
+function groupTabs(tabs: { id: number; name: string }[]): TabGroup[] {
+  const groups: TabGroup[] = [];
+  for (const tab of tabs) {
+    const index = tab.name.indexOf(TAB_GROUP_SEPARATOR);
+    const isNested = index >= 0;
+    const groupName = isNested ? tab.name.slice(0, index) : tab.name;
+    const label = isNested
+      ? tab.name.slice(index + TAB_GROUP_SEPARATOR.length)
+      : tab.name;
+    let group = groups.find((g) => g.name === groupName);
+    if (!group) {
+      group = { name: groupName, tabs: [] };
+      groups.push(group);
+    }
+    group.tabs.push({ id: tab.id, label, isNested });
+  }
+  return groups;
+}
+
 export function DashboardTabs() {
   const { isEditing = false, dashboard } = useDashboardContext();
   const { modalContent, show } = useConfirmation();
@@ -114,6 +152,71 @@ export function DashboardTabs() {
         });
       },
     });
+  }
+
+  const groups = isEditing ? [] : groupTabs(tabs);
+  if (groups.some((group) => group.tabs.some((tab) => tab.isNested))) {
+    const selectedGroup = groups.find((group) =>
+      group.tabs.some((tab) => tab.id === selectedTabId),
+    );
+    const subTabs = selectedGroup?.tabs.some((tab) => tab.isNested)
+      ? selectedGroup.tabs
+      : [];
+    return (
+      <Flex direction="column" gap="xs" w="100%" className={S.dashboardTabs}>
+        <TabRow<SelectedTabId>
+          value={selectedGroup ? selectedGroup.tabs[0].id : selectedTabId}
+          onChange={selectTab}
+          itemIds={groups.map((group) => group.tabs[0].id)}
+          handleDragEnd={moveTab}
+        >
+          {groups.map((group) => (
+            <Sortable
+              key={group.tabs[0].id}
+              id={group.tabs[0].id}
+              disabled
+              role="presentation"
+            >
+              <TabButton.Renameable
+                value={group.tabs[0].id}
+                label={group.name}
+                onRename={() => undefined}
+                canRename={false}
+                showMenu={false}
+                menuItems={menuItems}
+              />
+            </Sortable>
+          ))}
+        </TabRow>
+        {subTabs.length > 0 && (
+          <TabRow<SelectedTabId>
+            value={selectedTabId}
+            onChange={selectTab}
+            itemIds={subTabs.map((tab) => tab.id)}
+            handleDragEnd={moveTab}
+          >
+            {subTabs.map((tab) => (
+              <Sortable
+                key={tab.id}
+                id={tab.id}
+                disabled
+                role="presentation"
+              >
+                <TabButton.Renameable
+                  value={tab.id}
+                  label={tab.label}
+                  onRename={() => undefined}
+                  canRename={false}
+                  showMenu={false}
+                  menuItems={menuItems}
+                />
+              </Sortable>
+            ))}
+          </TabRow>
+        )}
+        {modalContent}
+      </Flex>
+    );
   }
 
   return (

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-ALL Tecnologias - aba "Monitoramento de atividade" (ALL Watcher) no painel modelo do ALL B.I.
+ALL Tecnologias - "Monitoramento de atividade" (ALL Watcher) no painel modelo do ALL B.I.
 
 Cria as perguntas (SQL sobre as views do schema `bi` do banco do ALL Watcher, com o marcador __ALL_WATCHER__),
-a aba "Monitoramento de atividade" no painel modelo e o filtro "Colaborador". Os filtros "Cliente", "Data inicial"
-e "Data final" do painel modelo sao reaproveitados. Sem data escolhida: ultimos 7 dias.
+tres sub-abas no painel modelo ("Monitoramento de atividade › Visão geral", "› Dia do colaborador" e
+"› Mapa da semana"; o fork mostra o " › " como aba dentro de aba) e os filtros "Colaborador" e "Período"
+(o mesmo filtro de datas do Metabase usado em "Atendimentos e Contratos"; padrao: Hoje; no mapa da semana:
+ultimos 7 dias). O filtro "Cliente" do painel modelo e reaproveitado.
 
 Linguagem pensada para quem nao e de TI: "tempo trabalhando", "programas produtivos", "fora do trabalho".
 Tipos: Produtivo / Neutro / Fora do trabalho (classificacao por programa e por site: tabelas categorias_app
@@ -27,6 +29,7 @@ import urllib.error
 import urllib.request
 
 TAB_NAME = "Monitoramento de atividade"
+SEP = " › "
 CLIENT_TAG = "all_cliente"
 GREEN, GRAY, ORANGE, YELLOW = "#1baf7a", "#a3a29a", "#eb6834", "#eda100"
 
@@ -34,14 +37,13 @@ TIPO = ("CASE n.categoria WHEN 'produtivo' THEN 'Produtivo' WHEN 'neutro' THEN '
         "WHEN 'improdutivo' THEN 'Fora do trabalho' ELSE 'Parado' END")
 HM = "(({m}) / 60)::int || 'h ' || lpad((({m}) % 60)::int::text, 2, '0') || 'min'"
 
-# Janela de datas e filtro de colaborador comuns a todas as perguntas da atividade
+# Periodo (filtro de campo do Metabase) e colaborador, comuns a todas as perguntas da atividade.
+# O filtro de campo vira "bi"."atividade"."dia" ..., por isso a tabela nao pode ter apelido.
 BASE = """WITH n AS (
-  SELECT a.*
-  FROM bi.atividade a
-  WHERE a.cliente = '__ALL_WATCHER__'
-    AND a.dia >= COALESCE(NULL[[, {{data_inicial}}::date]], (now() AT TIME ZONE 'America/Sao_Paulo')::date - 6)
-    AND a.dia <= COALESCE(NULL[[, {{data_final}}::date]], (now() AT TIME ZONE 'America/Sao_Paulo')::date)
-    [[AND a.colaborador = {{colaborador}}]]
+  SELECT * FROM bi.atividade
+  WHERE cliente = '__ALL_WATCHER__'
+    AND {{periodo}}
+    [[AND colaborador = {{colaborador}}]]
 )
 """
 
@@ -149,14 +151,68 @@ CARDS = [
 
     {"name": "Telas capturadas", "display": "table", "size": (24, 8), "use": "p",
      "description": "Imagens da tela do colaborador, uma a cada alguns minutos. Clique em \"Abrir tela\" para ampliar.",
-     "sql": ('SELECT p.capturado_em AS "Quando", p.colaborador AS "Colaborador", p.dispositivo AS "Computador", '
-             'p.programa AS "Programa ou site", p.url AS "Tela" FROM bi.prints p '
-             "WHERE p.cliente = '__ALL_WATCHER__' "
-             "AND p.dia >= COALESCE(NULL[[, {{data_inicial}}::date]], (now() AT TIME ZONE 'America/Sao_Paulo')::date - 6) "
-             "AND p.dia <= COALESCE(NULL[[, {{data_final}}::date]], (now() AT TIME ZONE 'America/Sao_Paulo')::date) "
-             "[[AND p.colaborador = {{colaborador}}]] ORDER BY p.capturado_em DESC LIMIT 24"),
+     "sql": ('SELECT capturado_em AS "Quando", colaborador AS "Colaborador", dispositivo AS "Computador", '
+             'programa AS "Programa ou site", url AS "Tela" FROM bi.prints '
+             "WHERE cliente = '__ALL_WATCHER__' AND {{periodo}} "
+             "[[AND colaborador = {{colaborador}}]] ORDER BY capturado_em DESC LIMIT 24"),
      "viz": {"column_settings": {'["name","Tela"]': {"view_as": "link", "link_text": "Abrir tela", "link_url": "{{Tela}}"}}}},
+
+    {"name": "Resumo do dia", "display": "scalar", "size": (24, 3), "use": "n",
+     "description": "Escolha um colaborador no filtro Colaborador (ou clique no nome na aba Visão geral).",
+     "sql": ("SELECT CASE WHEN count(DISTINCT n.colaborador) = 1 THEN max(n.colaborador) || ' usou o computador em ' "
+             "|| count(DISTINCT n.dia) || CASE WHEN count(DISTINCT n.dia) = 1 THEN ' dia' ELSE ' dias' END || ': ' || ("
+             + HM.format(m="COALESCE(sum(n.seg_ativo) / 60, 0)") + ") || ' trabalhando, ' || COALESCE(round(100.0 * "
+             "sum(n.seg_ativo) FILTER (WHERE n.categoria = 'produtivo') / NULLIF(sum(n.seg_ativo), 0)), 0)::int "
+             "|| '% em programas produtivos.' "
+             "WHEN count(DISTINCT n.colaborador) = 0 THEN 'Sem uso do computador no período escolhido.' "
+             "ELSE 'Escolha um colaborador no filtro acima para ver o dia dele.' END AS \"Resumo\" FROM n"),
+     "viz": {"scalar.field": "Resumo"}},
+
+    {"name": "Mapa da semana", "display": "table", "size": (24, 9), "use": "n",
+     "description": ("Cada quadrado mostra a % do tempo trabalhando que foi em programas produtivos naquele dia da semana. "
+                     "Verde: 60% ou mais. Amarelo: menos de 40%. Vazio: não usou o computador."),
+     "sql": ('SELECT n.colaborador AS "Colaborador", '
+             + ", ".join(
+                 "round(100.0 * sum(n.seg_ativo) FILTER (WHERE extract(isodow FROM n.dia) = %d AND n.categoria = 'produtivo') "
+                 "/ NULLIF(sum(n.seg_ativo) FILTER (WHERE extract(isodow FROM n.dia) = %d), 0))::int AS \"%s\"" % (k, k, nome)
+                 for k, nome in enumerate(["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], 1))
+             + ", " + HM.format(m="sum(n.seg_ativo) / NULLIF(count(DISTINCT n.dia), 0) / 60")
+             + ' AS "Tempo por dia" FROM n GROUP BY 1 ORDER BY 1'),
+     "viz": {"column_settings": {'["name","%s"]' % d: {"suffix": "%"} for d in ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]},
+             "table.column_formatting": [
+                 {"columns": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], "type": "single", "operator": ">=",
+                  "value": 60, "color": GREEN, "highlight_row": False},
+                 {"columns": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], "type": "single", "operator": "<",
+                  "value": 40, "color": YELLOW, "highlight_row": False}]}},
+
 ]
+
+
+_POR_NOME = {c["name"]: c for c in CARDS}
+
+# Sub-abas. "periodo" = filtro de datas da aba (chave em PERIODOS). Os cartoes de cada aba, na ordem.
+TABS = [
+    {"sub": "Visão geral", "periodo": "geral",
+     "texto": ("**Como ler esta página.** Mostra como o tempo de trabalho foi usado no computador no período escolhido "
+               "(padrão: hoje). **Produtivo** são os programas e sites do trabalho, **Neutro** são os de uso geral "
+               "(navegador, mensagens) e **Fora do trabalho** são redes sociais, vídeos e jogos. O tempo em que o "
+               "computador ficou parado não conta. Clique no nome de um colaborador para ver só ele."),
+     "cards": ["Colaboradores monitorados", "Tempo trabalhando por dia", "Tempo em programas produtivos",
+               "Tempo fora do trabalho", "Como o tempo foi usado", "Dia a dia", "Colaboradores", "Pontos de atenção"]},
+    {"sub": "Dia do colaborador", "periodo": "geral",
+     "texto": ("**Um colaborador, um dia.** Escolha o colaborador (e o período) nos filtros acima. Abaixo ficam o resumo, "
+               "as horas em que o computador foi usado, os programas e sites mais usados e as telas capturadas."),
+     "cards": ["Resumo do dia", "Uso ao longo do dia", "Onde o tempo foi gasto", "Telas capturadas"]},
+    {"sub": "Mapa da semana", "periodo": "semana",
+     "texto": ("**Quem destoa aparece de relance.** A tabela mostra, por colaborador e dia da semana, a parte do tempo "
+               "gasta em programas produtivos. Embaixo, os computadores da empresa agora e os programas mais usados pela equipe."),
+     "cards": ["Mapa da semana", "Computadores agora", "Onde o tempo foi gasto"]},
+]
+
+# Filtros de periodo do painel: id, nome do filtro, padrao
+PERIODOS = {"geral": {"id": "all_w_periodo", "slug": "periodo_atividade", "default": "thisday"},
+            "semana": {"id": "all_w_periodo_semana", "slug": "periodo_semana", "default": "past7days~"}}
+DIA_FIELD = {}  # preenchido em main(): {"atividade": id do campo bi.atividade.dia, "prints": id de bi.prints.dia}
 
 
 class Api:
@@ -183,14 +239,18 @@ def full_sql(c):
 CLIENTE_PADRAO = None  # definido em main(): cliente padrao do filtro do painel
 
 
-def tags_for(sql):
+def tags_for(sql, dia_field=None):
     """Variaveis do SQL. O cliente ganha valor padrao: sem ele o Metabase nao consegue calcular as colunas da
-    pergunta ao salvar (o fork exige um cliente) e as listas de filtro viram caixa de texto."""
+    pergunta ao salvar (o fork exige um cliente) e as listas de filtro viram caixa de texto. O periodo e um
+    filtro de campo (data/todas as opcoes) sobre a coluna dia da tabela usada."""
     tags = {}
     for name in sorted(set(re.findall(r"\{\{\s*(\w+)\s*\}\}", sql))):
+        if name == "periodo" and dia_field:
+            tags[name] = {"id": "all-w-periodo", "name": name, "display-name": "Período", "type": "dimension",
+                          "dimension": ["field", dia_field, None], "widget-type": "date/all-options"}
+            continue
         tags[name] = {"id": f"all-w-{name}", "name": name, "type": "text",
-                      "display-name": {"all_cliente": "Cliente", "data_inicial": "Data inicial",
-                                       "data_final": "Data final", "colaborador": "Colaborador"}.get(name, name)}
+                      "display-name": {"all_cliente": "Cliente", "colaborador": "Colaborador"}.get(name, name)}
         if name == "all_cliente" and CLIENTE_PADRAO:
             tags[name]["default"] = CLIENTE_PADRAO
     return tags
@@ -198,9 +258,30 @@ def tags_for(sql):
 
 def card_params(tags):
     """Parametros do cartao (um por variavel), como o Metabase espera para ligar filtros e listas."""
-    return [{"id": t["id"], "type": "category", "name": t["display-name"], "slug": n,
-             "target": ["variable", ["template-tag", n]], **({"default": t["default"]} if t.get("default") else {})}
-            for n, t in tags.items()]
+    out = []
+    for n, t in tags.items():
+        if t["type"] == "dimension":
+            out.append({"id": t["id"], "type": "date/all-options", "name": t["display-name"], "slug": n,
+                        "target": ["dimension", ["template-tag", n]]})
+        else:
+            out.append({"id": t["id"], "type": "category", "name": t["display-name"], "slug": n,
+                        "target": ["variable", ["template-tag", n]],
+                        **({"default": t["default"]} if t.get("default") else {})})
+    return out
+
+
+def campo_dia(api, db_id):
+    """Ids dos campos dia de bi.atividade e bi.prints."""
+    meta = api.call("GET", f"/api/database/{db_id}/metadata")
+    ids = {}
+    for t in meta["tables"]:
+        if t.get("schema") == "bi" and t["name"] in ("atividade", "prints"):
+            for f in t["fields"]:
+                if f["name"] == "dia":
+                    ids[t["name"]] = f["id"]
+    if len(ids) != 2:
+        sys.exit("Nao achei bi.atividade.dia e bi.prints.dia no banco (rode a migracao 0004_bi.sql e sincronize o banco).")
+    return ids
 
 
 def main():
@@ -224,15 +305,17 @@ def main():
 
     dash = api.call("GET", f"/api/dashboard/{args.painel}")
     param = {p["slug"]: p for p in dash.get("parameters") or []}
-    for need in ("cliente", "data_inicial", "data_final"):
-        if need not in param:
-            sys.exit(f"O painel nao tem o filtro '{need}'.")
+    if "cliente" not in param:
+        sys.exit("O painel nao tem o filtro 'cliente'.")
     global CLIENTE_PADRAO
     CLIENTE_PADRAO = args.cliente_padrao
+    DIA_FIELD.update(campo_dia(api, db["id"]))
     coll = next((dc["card"].get("collection_id") for dc in dash["dashcards"] if dc.get("card")), None)
     print(f"Painel: {dash['name']} - banco {db['name']} ({db['id']}) - pasta {coll}")
-    for c in CARDS:
-        print(f"  - {c['name']} ({c['display']})")
+    for t in TABS:
+        print(f"  {TAB_NAME}{SEP}{t['sub']}")
+        for n in t["cards"]:
+            print(f"     - {n} ({_POR_NOME[n]['display']})")
     if not args.aplicar:
         print("\nNada foi criado. Rode com --aplicar.")
         return
@@ -255,67 +338,75 @@ def main():
              "values_source_type": "card",
              "values_source_config": {"card_id": lista["id"],
                                       "value_field": ["field", "Colaborador", {"base-type": "type/Text"}]}}
-    params = [p for p in dash["parameters"] if p["slug"] != "colaborador"] + [colab]
+    periodos = [{"id": v["id"], "name": "Período", "slug": v["slug"], "type": "date/all-options",
+                 "sectionId": "date", "default": v["default"]} for v in PERIODOS.values()]
+    meus = {"colaborador"} | {v["slug"] for v in PERIODOS.values()}
+    params = [p for p in dash["parameters"] if p["slug"] not in meus] + [colab] + periodos
 
-    # aba (recria)
-    tabs = [{"id": t["id"], "name": t["name"]} for t in dash["tabs"]]
-    old = next((t for t in dash["tabs"] if re.search(r"monitora", t["name"], re.I)), None)
-    keep = [dc for dc in dash["dashcards"] if not old or dc.get("dashboard_tab_id") != old["id"]]
+    # abas: remove as antigas de monitoramento (e suas perguntas) e cria as tres sub-abas
+    antigas = [t for t in dash["tabs"] if re.search(r"monitora", t["name"], re.I)]
+    antigas_ids = {t["id"] for t in antigas}
+    keep = [dc for dc in dash["dashcards"] if dc.get("dashboard_tab_id") not in antigas_ids]
     for dc in dash["dashcards"]:
-        if old and dc.get("dashboard_tab_id") == old["id"] and dc.get("card_id"):
+        if dc.get("dashboard_tab_id") in antigas_ids and dc.get("card_id"):
             api.call("PUT", f"/api/card/{dc['card_id']}", {"archived": True})
-    tab_id = old["id"] if old else -1
-    if not old:
-        tabs.append({"id": tab_id, "name": TAB_NAME})
+    tabs = [{"id": t["id"], "name": t["name"]} for t in dash["tabs"] if t["id"] not in antigas_ids]
 
-    new, col, row, line_h = [], 0, 3, 0
-    new.append({
-        "id": -1, "card_id": None, "dashboard_tab_id": tab_id, "row": 0, "col": 0, "size_x": 24, "size_y": 3,
-        "parameter_mappings": [], "series": [],
-        "visualization_settings": {
-            "virtual_card": {"name": None, "display": "text", "visualization_settings": {},
-                             "dataset_query": {}, "archived": False},
-            "text": ("**Como ler esta página.** Os números mostram como o tempo de trabalho foi usado no computador. "
-                     "**Produtivo** são os programas e sites do trabalho, **Neutro** são os de uso geral (navegador, "
-                     "mensagens) e **Fora do trabalho** são redes sociais, vídeos e jogos. O tempo em que o computador "
-                     "ficou parado não conta. Sem escolher datas, a página mostra os últimos 7 dias.")}})
-    for i, c in enumerate(CARDS):
-        w, h = c["size"]
-        if col + w > 24:
-            row, col, line_h = row + line_h, 0, 0
-        sql = full_sql(c)
-        viz = json.loads(json.dumps(c["viz"]))
-        created = api.call("POST", "/api/card", {
-            "name": c["name"], "display": c["display"], "collection_id": coll,
-            "description": c.get("description"), "visualization_settings": viz,
-            "parameters": card_params(tags_for(sql)),
-            "dataset_query": {"database": db["id"], "type": "native",
-                              "native": {"query": sql, "template-tags": tags_for(sql)}}})
-        used = set(re.findall(r"\{\{\s*(\w+)\s*\}\}", sql))
-        maps = [{"parameter_id": cliente["id"], "card_id": created["id"],
-                 "target": ["variable", ["template-tag", CLIENT_TAG]]}]
-        for slug in ("data_inicial", "data_final", "colaborador"):
-            if slug in used:
-                pid = colab["id"] if slug == "colaborador" else param[slug]["id"]
-                maps.append({"parameter_id": pid, "card_id": created["id"],
-                             "target": ["variable", ["template-tag", slug]]})
-        dviz = {}
-        if c.get("click_colaborador"):
-            dviz["column_settings"] = {'["name","Colaborador"]': {"click_behavior": {
-                "type": "crossfilter", "parameterMapping": {colab["id"]: {
-                    "id": colab["id"], "source": {"type": "column", "id": "Colaborador", "name": "Colaborador"},
-                    "target": {"type": "parameter", "id": colab["id"]}}}}}}
-        new.append({"id": -(i + 2), "card_id": created["id"], "dashboard_tab_id": tab_id,
-                    "row": row, "col": col, "size_x": w, "size_y": h,
-                    "visualization_settings": dviz, "series": [], "parameter_mappings": maps})
-        print(f"  + pergunta {created['id']}: {c['name']}")
-        col += w
-        line_h = max(line_h, h)
+    new, next_id = [], [-1]
+    for ti, tab in enumerate(TABS):
+        tab_id = -(ti + 1)
+        tabs.append({"id": tab_id, "name": f"{TAB_NAME}{SEP}{tab['sub']}"})
+        per = PERIODOS[tab["periodo"]]
+        next_id[0] -= 1
+        new.append({
+            "id": next_id[0], "card_id": None, "dashboard_tab_id": tab_id, "row": 0, "col": 0, "size_x": 24, "size_y": 3,
+            "parameter_mappings": [], "series": [],
+            "visualization_settings": {
+                "virtual_card": {"name": None, "display": "text", "visualization_settings": {},
+                                 "dataset_query": {}, "archived": False},
+                "text": tab["texto"]}})
+        col, row, line_h = 0, 3, 0
+        for nome in tab["cards"]:
+            c = _POR_NOME[nome]
+            w, h = c["size"]
+            if col + w > 24:
+                row, col, line_h = row + line_h, 0, 0
+            sql = full_sql(c)
+            dia = DIA_FIELD["prints" if "p" in c["use"] else "atividade"]
+            viz = json.loads(json.dumps(c["viz"]))
+            created = api.call("POST", "/api/card", {
+                "name": c["name"], "display": c["display"], "collection_id": coll,
+                "description": c.get("description"), "visualization_settings": viz,
+                "parameters": card_params(tags_for(sql, dia)),
+                "dataset_query": {"database": db["id"], "type": "native",
+                                  "native": {"query": sql, "template-tags": tags_for(sql, dia)}}})
+            used = set(re.findall(r"\{\{\s*(\w+)\s*\}\}", sql))
+            maps = [{"parameter_id": cliente["id"], "card_id": created["id"],
+                     "target": ["variable", ["template-tag", CLIENT_TAG]]}]
+            if "periodo" in used:
+                maps.append({"parameter_id": per["id"], "card_id": created["id"],
+                             "target": ["dimension", ["template-tag", "periodo"]]})
+            if "colaborador" in used:
+                maps.append({"parameter_id": colab["id"], "card_id": created["id"],
+                             "target": ["variable", ["template-tag", "colaborador"]]})
+            dviz = {}
+            if c.get("click_colaborador"):
+                dviz["column_settings"] = {'["name","Colaborador"]': {"click_behavior": {
+                    "type": "crossfilter", "parameterMapping": {colab["id"]: {
+                        "id": colab["id"], "source": {"type": "column", "id": "Colaborador", "name": "Colaborador"},
+                        "target": {"type": "parameter", "id": colab["id"]}}}}}}
+            next_id[0] -= 1
+            new.append({"id": next_id[0], "card_id": created["id"], "dashboard_tab_id": tab_id,
+                        "row": row, "col": col, "size_x": w, "size_y": h,
+                        "visualization_settings": dviz, "series": [], "parameter_mappings": maps})
+            print(f"  + {tab['sub']}: pergunta {created['id']}: {c['name']}")
+            col += w
+            line_h = max(line_h, h)
 
     keep_cards = [{k: dc.get(k) for k in ("id", "card_id", "dashboard_tab_id", "row", "col", "size_x", "size_y",
                                           "parameter_mappings", "visualization_settings", "series")} for dc in keep]
     api.call("PUT", f"/api/dashboard/{args.painel}", {"parameters": params, "tabs": tabs, "dashcards": keep_cards + new})
-    print(f"Aba '{TAB_NAME}' criada com {len(CARDS)} perguntas.")
+    print(f"{len(TABS)} sub-abas de '{TAB_NAME}' criadas.")
 
     if args.grupo_demo:
         groups = api.call("GET", "/api/permissions/group")
