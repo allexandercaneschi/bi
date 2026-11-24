@@ -180,13 +180,27 @@ def full_sql(c):
     return base + c["sql"] + "\n/* {{" + CLIENT_TAG + "}} */"
 
 
+CLIENTE_PADRAO = None  # definido em main(): cliente padrao do filtro do painel
+
+
 def tags_for(sql):
+    """Variaveis do SQL. O cliente ganha valor padrao: sem ele o Metabase nao consegue calcular as colunas da
+    pergunta ao salvar (o fork exige um cliente) e as listas de filtro viram caixa de texto."""
     tags = {}
     for name in sorted(set(re.findall(r"\{\{\s*(\w+)\s*\}\}", sql))):
         tags[name] = {"id": f"all-w-{name}", "name": name, "type": "text",
                       "display-name": {"all_cliente": "Cliente", "data_inicial": "Data inicial",
                                        "data_final": "Data final", "colaborador": "Colaborador"}.get(name, name)}
+        if name == "all_cliente" and CLIENTE_PADRAO:
+            tags[name]["default"] = CLIENTE_PADRAO
     return tags
+
+
+def card_params(tags):
+    """Parametros do cartao (um por variavel), como o Metabase espera para ligar filtros e listas."""
+    return [{"id": t["id"], "type": "category", "name": t["display-name"], "slug": n,
+             "target": ["variable", ["template-tag", n]], **({"default": t["default"]} if t.get("default") else {})}
+            for n, t in tags.items()]
 
 
 def main():
@@ -195,6 +209,8 @@ def main():
     ap.add_argument("--painel", type=int, default=20)
     ap.add_argument("--banco", default="ALL Watcher")
     ap.add_argument("--grupo-demo", action="store_true")
+    ap.add_argument("--cliente-padrao", default="Empresa Exemplo (demo)",
+                    help="grupo de cliente (com codigo watcher) usado como padrao das perguntas; precisa existir, senao o Metabase nao calcula as colunas e as listas de filtro viram caixa de texto")
     args = ap.parse_args()
     api = Api(os.environ.get("MB_URL", ""), os.environ.get("MB_KEY", ""))
     if not api.url or not api.key:
@@ -211,6 +227,8 @@ def main():
     for need in ("cliente", "data_inicial", "data_final"):
         if need not in param:
             sys.exit(f"O painel nao tem o filtro '{need}'.")
+    global CLIENTE_PADRAO
+    CLIENTE_PADRAO = args.cliente_padrao
     coll = next((dc["card"].get("collection_id") for dc in dash["dashcards"] if dc.get("card")), None)
     print(f"Painel: {dash['name']} - banco {db['name']} ({db['id']}) - pasta {coll}")
     for c in CARDS:
@@ -228,6 +246,7 @@ def main():
     lista = api.call("POST", "/api/card", {
         "name": "Lista · Colaborador (watcher)", "display": "table", "collection_id": coll,
         "description": "Fonte do filtro Colaborador.", "visualization_settings": {},
+        "parameters": card_params(tags_for(lista_sql)),
         "dataset_query": {"database": db["id"], "type": "native",
                           "native": {"query": lista_sql, "template-tags": tags_for(lista_sql)}}})
     cliente = param["cliente"]
@@ -269,6 +288,7 @@ def main():
         created = api.call("POST", "/api/card", {
             "name": c["name"], "display": c["display"], "collection_id": coll,
             "description": c.get("description"), "visualization_settings": viz,
+            "parameters": card_params(tags_for(sql)),
             "dataset_query": {"database": db["id"], "type": "native",
                               "native": {"query": sql, "template-tags": tags_for(sql)}}})
         used = set(re.findall(r"\{\{\s*(\w+)\s*\}\}", sql))
