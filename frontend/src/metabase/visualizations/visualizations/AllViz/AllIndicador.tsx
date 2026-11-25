@@ -88,7 +88,7 @@ export function AllIndicador(props: VisualizationProps) {
         <div
           style={{
             fontSize: frase
-              ? "clamp(14px, 7cqh, 22px)"
+              ? "clamp(15px, min(16cqh, 4.2cqw), 24px)"
               : "clamp(22px, min(30cqh, 14cqw), 56px)",
             fontWeight: frase ? 600 : 800,
             lineHeight: frase ? 1.35 : 1.05,

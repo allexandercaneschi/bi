@@ -24,12 +24,15 @@ import {
   achaColuna,
   clica,
   clicavel,
+  comAcento,
   corDaSituacao,
   corDoNome,
   dadosDe,
+  dataHora,
   definicao,
   ehNumero,
   iniciais,
+  tempoRelativo,
 } from "./shared";
 
 const DEFINICAO = definicao({
@@ -144,22 +147,34 @@ export function AllPessoas(props: VisualizationProps) {
                     </div>
                   )}
                 </div>
-                {situacao && (
+              </div>
+
+              {situacao && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                   <span
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "#fff",
+                      width: 9,
+                      height: 9,
+                      borderRadius: "50%",
                       background: corDaSituacao(situacao),
-                      borderRadius: 999,
-                      padding: "3px 8px",
+                      flexShrink: 0,
+                      boxShadow: `0 0 0 3px color-mix(in srgb, ${corDaSituacao(situacao)} 25%, transparent)`,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: corDaSituacao(situacao),
                       whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
                     }}
                   >
-                    {situacao}
+                    {comAcento(situacao)}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
 
               {iTempo >= 0 && (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -210,8 +225,12 @@ export function AllPessoas(props: VisualizationProps) {
               )}
 
               {iUltimo >= 0 && r[iUltimo] != null && (
-                <div style={{ fontSize: 11, color: "var(--mb-color-text-tertiary)" }}>
-                  {cols[iUltimo].display_name}: {formata(r[iUltimo], iUltimo)}
+                <div
+                  title={dataHora(r[iUltimo]) || formata(r[iUltimo], iUltimo)}
+                  style={{ fontSize: 12, color: "var(--mb-color-text-tertiary)" }}
+                >
+                  {cols[iUltimo].display_name}:{" "}
+                  {tempoRelativo(r[iUltimo]) ?? formata(r[iUltimo], iUltimo)}
                 </div>
               )}
             </div>

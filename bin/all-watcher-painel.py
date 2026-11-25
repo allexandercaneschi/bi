@@ -144,7 +144,7 @@ CARDS = [
      "description": "Programas e sites mais usados, com o tipo de cada um. Para mudar o tipo, fale com a ALL.",
      "sql": ('SELECT n.programa AS "Programa ou site", ' + TIPO + ' AS "Tipo", '
              'round(sum(n.seg_ativo) / 3600.0, 2) AS "Horas", ' + HM.format(m="sum(n.seg_ativo) / 60") + ' AS "Tempo" '
-             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 12"),
+             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, 2 HAVING sum(n.seg_ativo) >= 60 ORDER BY 3 DESC LIMIT 12"),
      "viz": {}},
     {"name": "Telas capturadas", "display": "custom:all-galeria", "size": (12, 9), "use": "p",
      "description": "Imagens da tela do colaborador, uma a cada alguns minutos. Clique numa imagem para ampliar.",

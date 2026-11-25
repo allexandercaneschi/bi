@@ -8,6 +8,7 @@
  */
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 
+import { columnSettings } from "metabase/visualizations/lib/settings/column";
 import type {
   VisualizationDefinition,
   VisualizationProps,
@@ -71,6 +72,50 @@ export function corDaSituacao(situacao: unknown): string {
     return AMARELO;
   }
   return PARADO;
+}
+
+/** "há 5 min", "há 3 h", "há 2 dias" para datas; null se o valor não for data. */
+export function tempoRelativo(valor: unknown, agora: number = Date.now()): string | null {
+  if (valor == null || ehNumero(valor)) {
+    return null;
+  }
+  const t = Date.parse(String(valor));
+  if (!Number.isFinite(t)) {
+    return null;
+  }
+  const min = Math.round((agora - t) / 60000);
+  if (min < 1) {
+    return "agora";
+  }
+  if (min < 60) {
+    return `há ${min} min`;
+  }
+  const h = Math.round(min / 60);
+  if (h < 24) {
+    return `há ${h} h`;
+  }
+  const d = Math.round(h / 24);
+  return d === 1 ? "há 1 dia" : `há ${d} dias`;
+}
+
+/** Data e hora por extenso curto em pt-BR (24/11/2026 17:58); vazio se não for data. */
+export function dataHora(valor: unknown): string {
+  const t = Date.parse(String(valor ?? ""));
+  if (!Number.isFinite(t)) {
+    return "";
+  }
+  return new Date(t).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Acerta acentos de textos que vêm sem acento do banco (ex.: "ha mais de 1 dia"). */
+export function comAcento(texto: string): string {
+  return texto.replace(/\bha\b/g, "há");
 }
 
 type Dados = VisualizationProps["series"][number]["data"];
@@ -235,6 +280,11 @@ export function definicao(
     // Não sugeridas automaticamente: o autor da pergunta escolhe em "Visualizações personalizadas".
     isSensible: () => false,
     checkRenderable: () => undefined,
-    settings: parcial.settings ?? {},
+    // column_settings precisa estar declarado: é nele que o painel guarda o clique ("Ao clicar") de cada
+    // coluna e a formatação; sem a declaração o Metabase não repassa esses ajustes para a visualização.
+    settings: {
+      ...columnSettings(),
+      ...(parcial.settings ?? {}),
+    },
   };
 }

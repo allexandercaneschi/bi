@@ -18,6 +18,7 @@ import {
   SemDados,
   achaColuna,
   dadosDe,
+  dataHora,
   definicao,
 } from "./shared";
 
@@ -60,7 +61,12 @@ export function AllGaleria(props: VisualizationProps) {
             key={ri}
             url={String(r[iUrl] ?? "")}
             titulo={texto(r, iPessoa)}
-            subtitulo={[texto(r, iQuando), texto(r, iProg)].filter(Boolean).join(" · ")}
+            subtitulo={[
+              (iQuando >= 0 && dataHora(r[iQuando])) || texto(r, iQuando),
+              texto(r, iProg),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           />
         ))}
       </div>
