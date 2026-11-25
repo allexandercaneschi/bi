@@ -12,6 +12,10 @@ export const useGetIconForVisualizationType = () => {
 
   return useCallback(
     (display: VisualizationDisplay): IconData => {
+      // ALL Tecnologias: visualizações próprias do fork usam o ícone que elas mesmas declaram
+      if (typeof display === "string" && display.startsWith("custom:all-")) {
+        return getIconForVisualizationType(display);
+      }
       if (PLUGIN_CUSTOM_VIZ.isCustomVizDisplay(display)) {
         const { icon, isLoading } = getCustomVizIcon(display);
         if (isLoading || !icon) {

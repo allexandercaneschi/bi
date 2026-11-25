@@ -135,6 +135,31 @@ disponível para eles. Mantenha este repositório **público** e, se quiser, inc
 rodapé ou na tela "Sobre". Os avisos de copyright e os arquivos `LICENSE*` do Metabase devem permanecer.
 "Metabase" é marca registrada da Metabase, Inc.; este fork não é afiliado nem endossado por ela.
 
+## Visualizações próprias (ALL)
+
+Oito visualizações feitas no fork para painéis de cliente, pensadas para quem não é de TI. Ficam em
+`frontend/src/metabase/visualizations/visualizations/AllViz/` e são registradas em
+`visualizations/register.js` com o identificador `custom:all-...`. Valem para **qualquer pergunta de qualquer
+painel**: no editor da pergunta, em Visualização > "Visualizações personalizadas" (Custom visualizations).
+Não são sugeridas automaticamente. Cada uma lê as colunas do SQL **pelo nome** (sem diferenciar acento e
+maiúsculas). Cores fixas: verde = produtivo/ok, cinza = neutro, laranja = fora do trabalho/alerta,
+amarelo = atenção. Funcionam no tema claro e escuro.
+
+| Visualização (display) | Colunas esperadas |
+|---|---|
+| ALL · Indicador (`custom:all-indicador`) | 1ª coluna = valor (número ou frase); opcionais `Rótulo`, `Detalhe`, `Cor` (verde/amarelo/laranja/cinza/azul/roxo/#hex), `Sufixo`. Usa só a 1ª linha. |
+| ALL · Barra de proporção (`custom:all-proporcao`) | 1ª coluna = categoria, 1ª numérica = valor, opcional `Cor`. Ajuste "Unidade" (padrão h). |
+| ALL · Mapa de calor (`custom:all-mapa-de-calor`) | 1ª coluna = linha (ex.: colaborador), colunas numéricas = quadrados, colunas de texto = extras à direita. Ajustes "Verde a partir de" (60), "Amarelo abaixo de" (40), "Sufixo" (%). |
+| ALL · Linha do tempo do dia (`custom:all-linha-do-tempo`) | `Hora` (número ou "08h"), `Tipo` (opcional), `Horas`. |
+| ALL · Cartões de pessoas (`custom:all-pessoas`) | 1ª coluna ou `Colaborador`; opcionais `Tempo`/`Tempo por dia`, `Dias de uso`, `Produtivo (%)`, `Neutro (%)`, `Fora do trabalho (%)`, `Situação`, `Computador`, `Último uso`/`Último contato`. |
+| ALL · Lista de avisos (`custom:all-avisos`) | 1ª coluna de texto = frase; opcional `Nível` (alerta/atencao/ok). |
+| ALL · Ranking de barras (`custom:all-ranking`) | 1ª coluna = rótulo, 1ª numérica = barra, opcionais `Tipo` (cor) e `Tempo` (texto à direita). |
+| ALL · Galeria de telas (`custom:all-galeria`) | `Tela`/`URL`/`Imagem` = endereço da imagem; opcionais `Quando`, `Colaborador`, `Programa ou site`. |
+
+Clique: nos cartões de pessoas, no nome do mapa de calor, no ranking e na barra de proporção o clique usa o
+comportamento configurado na **1ª coluna** da pergunta (no painel: "Ao clicar" > filtro cruzado, link etc.).
+Para criar uma nova: copie um arquivo de `AllViz/`, troque o identificador e adicione em `AllViz/index.ts`.
+
 ## Filtragem por cliente (um painel para todos os clientes)
 
 Um único painel "master" e um único conjunto de perguntas servem todos os clientes. O SQL das perguntas
