@@ -98,19 +98,18 @@ export function tempoRelativo(valor: unknown, agora: number = Date.now()): strin
   return d === 1 ? "há 1 dia" : `há ${d} dias`;
 }
 
-/** Data e hora por extenso curto em pt-BR (24/11/2026 17:58); vazio se não for data. */
+/** Data e hora no padrão ALL, ano primeiro (2026/11/24 - 17:58), no fuso do navegador; vazio se não for data. */
 export function dataHora(valor: unknown): string {
   const t = Date.parse(String(valor ?? ""));
   if (!Number.isFinite(t)) {
     return "";
   }
-  return new Date(t).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const d = new Date(t);
+  const dois = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}/${dois(d.getMonth() + 1)}/${dois(d.getDate())}` +
+    ` - ${dois(d.getHours())}:${dois(d.getMinutes())}`
+  );
 }
 
 /** Acerta acentos de textos que vêm sem acento do banco (ex.: "ha mais de 1 dia"). */
