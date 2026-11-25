@@ -47,30 +47,75 @@ BASE = """WITH n AS (
 )
 """
 
+PCT_PROD = ("COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'produtivo') "
+            "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int")
+PCT_NEUTRO = ("COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'neutro') "
+              "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int")
+PCT_FORA = ("COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') "
+            "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int")
+ORDEM_TIPO = ("CASE n.categoria WHEN 'produtivo' THEN 1 WHEN 'neutro' THEN 2 WHEN 'improdutivo' THEN 3 ELSE 4 END")
+DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+# Visualizacoes proprias do fork (ALL-FORK.md, "Visualizações próprias"): leem as colunas pelo nome.
 CARDS = [
-    {"name": "Colaboradores monitorados", "display": "scalar", "size": (6, 3), "use": "n",
-     "sql": 'SELECT count(DISTINCT n.colaborador) AS "Colaboradores" FROM n', "viz": {}},
-    {"name": "Tempo trabalhando por dia", "display": "scalar", "size": (6, 3), "use": "n",
+    {"name": "Colaboradores monitorados", "display": "custom:all-indicador", "size": (6, 3), "use": "n",
+     "sql": ('SELECT count(DISTINCT n.colaborador) AS "Colaboradores", '
+             "'usaram o computador no período' AS \"Detalhe\", 'azul' AS \"Cor\" FROM n"), "viz": {}},
+    {"name": "Tempo trabalhando por dia", "display": "custom:all-indicador", "size": (6, 3), "use": "n",
      "description": "Média por colaborador nos dias em que usou o computador. Não conta o tempo parado.",
      "sql": ("SELECT " + HM.format(m="COALESCE(sum(n.seg_ativo) / NULLIF(count(DISTINCT (n.colaborador, n.dia)), 0) / 60, 0)")
-             + ' AS "Por colaborador, por dia" FROM n'), "viz": {}},
-    {"name": "Tempo em programas produtivos", "display": "scalar", "size": (6, 3), "use": "n",
+             + ' AS "Por colaborador, por dia", '
+             "'média por pessoa, por dia (sem o tempo parado)' AS \"Detalhe\", 'azul' AS \"Cor\" FROM n"), "viz": {}},
+    {"name": "Tempo em programas produtivos", "display": "custom:all-indicador", "size": (6, 3), "use": "n",
      "description": "Parte do tempo trabalhando que foi em programas e sites do trabalho (ERP, Office, e-mail...).",
-     "sql": ("SELECT COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'produtivo') "
-             "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int || '%' AS \"Produtivo\" FROM n"), "viz": {}},
-    {"name": "Tempo fora do trabalho", "display": "scalar", "size": (6, 3), "use": "n",
+     "sql": ("SELECT " + PCT_PROD + " AS \"Produtivo\", '%' AS \"Sufixo\", "
+             "'do tempo foi em programas do trabalho' AS \"Detalhe\", "
+             "CASE WHEN " + PCT_PROD + " >= 60 THEN 'verde' WHEN " + PCT_PROD + " < 40 THEN 'amarelo' ELSE 'cinza' END "
+             "AS \"Cor\" FROM n"), "viz": {}},
+    {"name": "Tempo fora do trabalho", "display": "custom:all-indicador", "size": (6, 3), "use": "n",
      "description": "Parte do tempo trabalhando que foi em redes sociais, vídeos, jogos e similares.",
-     "sql": ("SELECT COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') "
-             "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int || '%' AS \"Fora do trabalho\" FROM n"), "viz": {}},
+     "sql": ("SELECT " + PCT_FORA + " AS \"Fora do trabalho\", '%' AS \"Sufixo\", "
+             "'em redes sociais, vídeos, jogos e similares' AS \"Detalhe\", "
+             "CASE WHEN " + PCT_FORA + " >= 25 THEN 'laranja' ELSE 'verde' END AS \"Cor\" FROM n"), "viz": {}},
 
-    {"name": "Como o tempo foi usado", "display": "pie", "size": (8, 7), "use": "n",
+    {"name": "Como o tempo foi usado", "display": "custom:all-proporcao", "size": (24, 4), "use": "n",
      "description": "Divisão do tempo trabalhando entre programas produtivos, neutros e fora do trabalho.",
      "sql": ("SELECT " + TIPO + ' AS "Tipo", round(sum(n.seg_ativo) / 3600.0, 1) AS "Horas" '
-             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1 ORDER BY 2 DESC"),
-     "viz": {"pie.dimension": "Tipo", "pie.metric": "Horas", "pie.show_legend": True,
-             "pie.percent_visibility": "inside",
-             "pie.colors": {"Produtivo": GREEN, "Neutro": GRAY, "Fora do trabalho": ORANGE}}},
-    {"name": "Dia a dia", "display": "bar", "size": (16, 7), "use": "n",
+             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, " + ORDEM_TIPO + " ORDER BY " + ORDEM_TIPO),
+     "viz": {"all.unidade": "h"}},
+
+    {"name": "Colaboradores", "display": "custom:all-pessoas", "size": (16, 9), "use": "n", "click_colaborador": True,
+     "description": "Clique num cartão para ver só aquele colaborador na página inteira.",
+     "sql": ('SELECT n.colaborador AS "Colaborador", '
+             + HM.format(m="sum(n.seg_ativo) / NULLIF(count(DISTINCT n.dia), 0) / 60") + ' AS "Tempo por dia", '
+             'count(DISTINCT n.dia) AS "Dias de uso", '
+             + PCT_PROD + ' AS "Produtivo (%)", ' + PCT_NEUTRO + ' AS "Neutro (%)", ' + PCT_FORA + ' AS "Fora do trabalho (%)", '
+             "max(n.fim) AS \"Último uso\" FROM n GROUP BY 1 ORDER BY 6 DESC, 1"),
+     "viz": {}},
+    {"name": "Pontos de atenção", "display": "custom:all-avisos", "size": (8, 9), "use": "nd",
+     "description": "Só aparece o que foge do normal.",
+     "sql": ("""SELECT msg AS "O que chamou a atenção", nivel AS "Nível" FROM (
+  SELECT 1 AS o, 'atencao' AS nivel,
+         format('%s passou %s%% do tempo em programas e sites fora do trabalho (média da equipe: %s%%).',
+                t.colaborador, t.pct, t.media) AS msg
+  FROM (SELECT x.colaborador, x.pct, round(avg(x.pct) OVER ())::int AS media
+        FROM (SELECT n.colaborador,
+                     round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') / NULLIF(sum(n.seg_ativo), 0))::int AS pct
+              FROM n GROUP BY 1) x WHERE x.pct IS NOT NULL) t
+  WHERE t.pct >= 25
+  UNION ALL
+  SELECT 0, 'alerta', format('%s (%s) está sem enviar dados há mais de 1 dia. Pode estar desligado ou sem internet.', d.dispositivo, d.colaborador)
+  FROM bi.dispositivos d
+  WHERE d.cliente = '__ALL_WATCHER__' AND d.ativo AND d.situacao = 'Sem contato ha mais de 1 dia'
+  UNION ALL
+  SELECT 3, 'ok', 'Nada fora do normal neste período.'
+  WHERE NOT EXISTS (SELECT 1 FROM n GROUP BY n.colaborador HAVING
+          100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') / NULLIF(sum(n.seg_ativo), 0) >= 25)
+    AND NOT EXISTS (SELECT 1 FROM bi.dispositivos d WHERE d.cliente = '__ALL_WATCHER__' AND d.ativo
+                    AND d.situacao = 'Sem contato ha mais de 1 dia')
+) z ORDER BY o, msg"""), "viz": {}},
+
+    {"name": "Dia a dia", "display": "bar", "size": (24, 6), "use": "n",
      "description": "Horas trabalhadas em cada dia, separadas por tipo de uso.",
      "sql": ("SELECT n.dia AS \"Dia\", " + TIPO + ' AS "Tipo", round(sum(n.seg_ativo) / 3600.0, 1) AS "Horas" '
              "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, 2 ORDER BY 1"),
@@ -79,112 +124,54 @@ CARDS = [
              "series_settings": {"Produtivo": {"color": GREEN}, "Neutro": {"color": GRAY},
                                  "Fora do trabalho": {"color": ORANGE}}}},
 
-    {"name": "Colaboradores", "display": "table", "size": (24, 7), "use": "n", "click_colaborador": True,
-     "description": "Clique no nome para ver só aquele colaborador na página inteira.",
-     "sql": ('SELECT n.colaborador AS "Colaborador", count(DISTINCT n.dia) AS "Dias de uso", '
-             + HM.format(m="sum(n.seg_ativo) / NULLIF(count(DISTINCT n.dia), 0) / 60") + ' AS "Tempo por dia", '
-             "COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'produtivo') "
-             "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int AS \"Produtivo (%)\", "
-             "COALESCE(round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') "
-             "/ NULLIF(sum(n.seg_ativo), 0)), 0)::int AS \"Fora do trabalho (%)\", "
-             "max(n.fim) AS \"Último uso\" FROM n GROUP BY 1 ORDER BY 5 DESC, 1"),
-     "viz": {"table.column_formatting": [
-         {"columns": ["Fora do trabalho (%)"], "type": "single", "operator": ">=", "value": 25,
-          "color": ORANGE, "highlight_row": False},
-         {"columns": ["Fora do trabalho (%)"], "type": "single", "operator": "<", "value": 25,
-          "color": GREEN, "highlight_row": False},
-         {"columns": ["Produtivo (%)"], "type": "single", "operator": ">=", "value": 60,
-          "color": GREEN, "highlight_row": False},
-         {"columns": ["Produtivo (%)"], "type": "single", "operator": "<", "value": 40,
-          "color": YELLOW, "highlight_row": False}]}},
+    {"name": "Resumo do dia", "display": "custom:all-indicador", "size": (24, 3), "use": "n",
+     "description": "Escolha um colaborador no filtro Colaborador (ou clique no cartão dele na aba Visão geral).",
+     "sql": ("SELECT CASE WHEN count(DISTINCT n.colaborador) = 1 THEN max(n.colaborador) || ' usou o computador em ' "
+             "|| count(DISTINCT n.dia) || CASE WHEN count(DISTINCT n.dia) = 1 THEN ' dia' ELSE ' dias' END || ': ' || ("
+             + HM.format(m="COALESCE(sum(n.seg_ativo) / 60, 0)") + ") || ' trabalhando, ' || " + PCT_PROD +
+             " || '% em programas produtivos.' "
+             "WHEN count(DISTINCT n.colaborador) = 0 THEN 'Sem uso do computador no período escolhido.' "
+             "ELSE 'Escolha um colaborador no filtro acima para ver o dia dele.' END AS \"Resumo\", "
+             "CASE WHEN count(DISTINCT n.colaborador) = 1 THEN CASE WHEN " + PCT_PROD + " >= 60 THEN 'verde' "
+             "WHEN " + PCT_PROD + " < 40 THEN 'amarelo' ELSE 'cinza' END ELSE 'azul' END AS \"Cor\" FROM n"),
+     "viz": {}},
+    {"name": "Uso ao longo do dia", "display": "custom:all-linha-do-tempo", "size": (24, 6), "use": "n",
+     "description": "Em quais horas o computador foi usado e como (soma do período). Espaços vazios = sem uso.",
+     "sql": ('SELECT n.hora AS "Hora", ' + TIPO + ' AS "Tipo", round(sum(n.seg_ativo) / 3600.0, 2) AS "Horas" '
+             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, 2 ORDER BY 1"),
+     "viz": {}},
+    {"name": "Onde o tempo foi gasto", "display": "custom:all-ranking", "size": (12, 9), "use": "n",
+     "description": "Programas e sites mais usados, com o tipo de cada um. Para mudar o tipo, fale com a ALL.",
+     "sql": ('SELECT n.programa AS "Programa ou site", ' + TIPO + ' AS "Tipo", '
+             'round(sum(n.seg_ativo) / 3600.0, 2) AS "Horas", ' + HM.format(m="sum(n.seg_ativo) / 60") + ' AS "Tempo" '
+             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 12"),
+     "viz": {}},
+    {"name": "Telas capturadas", "display": "custom:all-galeria", "size": (12, 9), "use": "p",
+     "description": "Imagens da tela do colaborador, uma a cada alguns minutos. Clique numa imagem para ampliar.",
+     "sql": ('SELECT url AS "Tela", capturado_em AS "Quando", colaborador AS "Colaborador", '
+             'programa AS "Programa ou site" FROM bi.prints '
+             "WHERE cliente = '__ALL_WATCHER__' AND {{periodo}} "
+             "[[AND colaborador = {{colaborador}}]] ORDER BY capturado_em DESC LIMIT 24"),
+     "viz": {}},
 
-    {"name": "Uso ao longo do dia", "display": "bar", "size": (12, 7), "use": "n",
-     "description": "Em quais horas do dia o computador é mais usado (soma do período).",
-     "sql": ("SELECT lpad(n.hora::text, 2, '0') || 'h' AS \"Hora\", " + TIPO + ' AS "Tipo", '
-             'round(sum(n.seg_ativo) / 3600.0, 1) AS "Horas" '
-             "FROM n WHERE n.categoria <> 'parado' GROUP BY n.hora, 2 ORDER BY n.hora"),
-     "viz": {"graph.dimensions": ["Hora", "Tipo"], "graph.metrics": ["Horas"], "stackable.stack_type": "stacked",
-             "graph.y_axis.title_text": "Horas",
-             "series_settings": {"Produtivo": {"color": GREEN}, "Neutro": {"color": GRAY},
-                                 "Fora do trabalho": {"color": ORANGE}}}},
-    {"name": "Computadores agora", "display": "table", "size": (12, 7), "use": "d",
+    {"name": "Mapa da semana", "display": "custom:all-mapa-de-calor", "size": (24, 8), "use": "n", "click_colaborador": True,
+     "description": ("Cada quadrado mostra a % do tempo trabalhando que foi em programas produtivos naquele dia da semana. "
+                     "Clique no nome para ver só aquele colaborador."),
+     "sql": ('SELECT n.colaborador AS "Colaborador", '
+             + ", ".join(
+                 "round(100.0 * sum(n.seg_ativo) FILTER (WHERE extract(isodow FROM n.dia) = %d AND n.categoria = 'produtivo') "
+                 "/ NULLIF(sum(n.seg_ativo) FILTER (WHERE extract(isodow FROM n.dia) = %d), 0))::int AS \"%s\"" % (k, k, nome)
+                 for k, nome in enumerate(DIAS_SEMANA, 1))
+             + ", " + HM.format(m="sum(n.seg_ativo) / NULLIF(count(DISTINCT n.dia), 0) / 60")
+             + ' AS "Tempo por dia" FROM n GROUP BY 1 ORDER BY 1'),
+     "viz": {"all.verde_a_partir_de": 60, "all.amarelo_abaixo_de": 40, "all.sufixo": "%"}},
+    {"name": "Computadores agora", "display": "custom:all-pessoas", "size": (12, 8), "use": "d",
      "description": "Quem está usando o computador neste momento. Atualiza sozinho.",
      "sql": ('SELECT d.colaborador AS "Colaborador", d.dispositivo AS "Computador", d.situacao AS "Situação", '
              'd.ultimo_contato AS "Último contato" FROM bi.dispositivos d '
              "WHERE d.cliente = '__ALL_WATCHER__' AND d.ativo "
              "ORDER BY CASE d.situacao WHEN 'Em uso' THEN 0 WHEN 'Sem contato hoje' THEN 1 ELSE 2 END, 1"),
-     "viz": {"table.column_formatting": [
-         {"columns": ["Situação"], "type": "single", "operator": "=", "value": "Em uso", "color": GREEN, "highlight_row": False},
-         {"columns": ["Situação"], "type": "single", "operator": "=", "value": "Sem contato hoje", "color": YELLOW, "highlight_row": False},
-         {"columns": ["Situação"], "type": "single", "operator": "contains", "value": "mais de 1 dia", "color": ORANGE, "highlight_row": False}]}},
-
-    {"name": "Onde o tempo foi gasto", "display": "table", "size": (14, 8), "use": "n",
-     "description": "Programas e sites mais usados, com o tipo de cada um. Para mudar o tipo, fale com a ALL.",
-     "sql": ('SELECT n.programa AS "Programa ou site", ' + TIPO + ' AS "Tipo", '
-             + HM.format(m="sum(n.seg_ativo) / 60") + ' AS "Tempo", round(sum(n.seg_ativo) / 3600.0, 1) AS "Horas" '
-             "FROM n WHERE n.categoria <> 'parado' GROUP BY 1, 2 ORDER BY 4 DESC LIMIT 15"),
-     "viz": {"table.column_formatting": [
-         {"columns": ["Tipo"], "type": "single", "operator": "=", "value": "Produtivo", "color": GREEN, "highlight_row": False},
-         {"columns": ["Tipo"], "type": "single", "operator": "=", "value": "Neutro", "color": GRAY, "highlight_row": False},
-         {"columns": ["Tipo"], "type": "single", "operator": "=", "value": "Fora do trabalho", "color": ORANGE, "highlight_row": False}]}},
-    {"name": "Pontos de atenção", "display": "table", "size": (10, 8), "use": "nd",
-     "description": "Só aparece o que foge do normal.",
-     "sql": ("""SELECT msg AS "O que chamou a atenção" FROM (
-  SELECT 1 AS o, format('%s passou %s%% do tempo em programas e sites fora do trabalho (média da equipe: %s%%).',
-                        t.colaborador, t.pct, t.media) AS msg
-  FROM (SELECT x.colaborador, x.pct, round(avg(x.pct) OVER ())::int AS media
-        FROM (SELECT n.colaborador,
-                     round(100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') / NULLIF(sum(n.seg_ativo), 0))::int AS pct
-              FROM n GROUP BY 1) x WHERE x.pct IS NOT NULL) t
-  WHERE t.pct >= 25
-  UNION ALL
-  SELECT 2, format('%s (%s) está sem enviar dados há mais de 1 dia. Pode estar desligado ou sem internet.', d.dispositivo, d.colaborador)
-  FROM bi.dispositivos d
-  WHERE d.cliente = '__ALL_WATCHER__' AND d.ativo AND d.situacao = 'Sem contato ha mais de 1 dia'
-  UNION ALL
-  SELECT 3, 'Nada fora do normal neste período.'
-  WHERE NOT EXISTS (SELECT 1 FROM n GROUP BY n.colaborador HAVING
-          100.0 * sum(n.seg_ativo) FILTER (WHERE n.categoria = 'improdutivo') / NULLIF(sum(n.seg_ativo), 0) >= 25)
-    AND NOT EXISTS (SELECT 1 FROM bi.dispositivos d WHERE d.cliente = '__ALL_WATCHER__' AND d.ativo
-                    AND d.situacao = 'Sem contato ha mais de 1 dia')
-) z ORDER BY o, msg"""), "viz": {}},
-
-    {"name": "Telas capturadas", "display": "table", "size": (24, 8), "use": "p",
-     "description": "Imagens da tela do colaborador, uma a cada alguns minutos. Clique em \"Abrir tela\" para ampliar.",
-     "sql": ('SELECT capturado_em AS "Quando", colaborador AS "Colaborador", dispositivo AS "Computador", '
-             'programa AS "Programa ou site", url AS "Tela" FROM bi.prints '
-             "WHERE cliente = '__ALL_WATCHER__' AND {{periodo}} "
-             "[[AND colaborador = {{colaborador}}]] ORDER BY capturado_em DESC LIMIT 24"),
-     "viz": {"column_settings": {'["name","Tela"]': {"view_as": "link", "link_text": "Abrir tela", "link_url": "{{Tela}}"}}}},
-
-    {"name": "Resumo do dia", "display": "scalar", "size": (24, 3), "use": "n",
-     "description": "Escolha um colaborador no filtro Colaborador (ou clique no nome na aba Visão geral).",
-     "sql": ("SELECT CASE WHEN count(DISTINCT n.colaborador) = 1 THEN max(n.colaborador) || ' usou o computador em ' "
-             "|| count(DISTINCT n.dia) || CASE WHEN count(DISTINCT n.dia) = 1 THEN ' dia' ELSE ' dias' END || ': ' || ("
-             + HM.format(m="COALESCE(sum(n.seg_ativo) / 60, 0)") + ") || ' trabalhando, ' || COALESCE(round(100.0 * "
-             "sum(n.seg_ativo) FILTER (WHERE n.categoria = 'produtivo') / NULLIF(sum(n.seg_ativo), 0)), 0)::int "
-             "|| '% em programas produtivos.' "
-             "WHEN count(DISTINCT n.colaborador) = 0 THEN 'Sem uso do computador no período escolhido.' "
-             "ELSE 'Escolha um colaborador no filtro acima para ver o dia dele.' END AS \"Resumo\" FROM n"),
-     "viz": {"scalar.field": "Resumo"}},
-
-    {"name": "Mapa da semana", "display": "table", "size": (24, 9), "use": "n",
-     "description": ("Cada quadrado mostra a % do tempo trabalhando que foi em programas produtivos naquele dia da semana. "
-                     "Verde: 60% ou mais. Amarelo: menos de 40%. Vazio: não usou o computador."),
-     "sql": ('SELECT n.colaborador AS "Colaborador", '
-             + ", ".join(
-                 "round(100.0 * sum(n.seg_ativo) FILTER (WHERE extract(isodow FROM n.dia) = %d AND n.categoria = 'produtivo') "
-                 "/ NULLIF(sum(n.seg_ativo) FILTER (WHERE extract(isodow FROM n.dia) = %d), 0))::int AS \"%s\"" % (k, k, nome)
-                 for k, nome in enumerate(["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], 1))
-             + ", " + HM.format(m="sum(n.seg_ativo) / NULLIF(count(DISTINCT n.dia), 0) / 60")
-             + ' AS "Tempo por dia" FROM n GROUP BY 1 ORDER BY 1'),
-     "viz": {"column_settings": {'["name","%s"]' % d: {"suffix": "%"} for d in ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]},
-             "table.column_formatting": [
-                 {"columns": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], "type": "single", "operator": ">=",
-                  "value": 60, "color": GREEN, "highlight_row": False},
-                 {"columns": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"], "type": "single", "operator": "<",
-                  "value": 40, "color": YELLOW, "highlight_row": False}]}},
-
+     "viz": {}},
 ]
 
 
@@ -196,15 +183,15 @@ TABS = [
      "texto": ("**Como ler esta página.** Mostra como o tempo de trabalho foi usado no computador no período escolhido "
                "(padrão: hoje). **Produtivo** são os programas e sites do trabalho, **Neutro** são os de uso geral "
                "(navegador, mensagens) e **Fora do trabalho** são redes sociais, vídeos e jogos. O tempo em que o "
-               "computador ficou parado não conta. Clique no nome de um colaborador para ver só ele."),
+               "computador ficou parado não conta. Clique no cartão de um colaborador para ver só ele."),
      "cards": ["Colaboradores monitorados", "Tempo trabalhando por dia", "Tempo em programas produtivos",
-               "Tempo fora do trabalho", "Como o tempo foi usado", "Dia a dia", "Colaboradores", "Pontos de atenção"]},
+               "Tempo fora do trabalho", "Como o tempo foi usado", "Colaboradores", "Pontos de atenção", "Dia a dia"]},
     {"sub": "Dia do colaborador", "periodo": "geral",
      "texto": ("**Um colaborador, um dia.** Escolha o colaborador (e o período) nos filtros acima. Abaixo ficam o resumo, "
                "as horas em que o computador foi usado, os programas e sites mais usados e as telas capturadas."),
      "cards": ["Resumo do dia", "Uso ao longo do dia", "Onde o tempo foi gasto", "Telas capturadas"]},
     {"sub": "Mapa da semana", "periodo": "semana",
-     "texto": ("**Quem destoa aparece de relance.** A tabela mostra, por colaborador e dia da semana, a parte do tempo "
+     "texto": ("**Quem destoa aparece de relance.** O mapa mostra, por colaborador e dia da semana, a parte do tempo "
                "gasta em programas produtivos. Embaixo, os computadores da empresa agora e os programas mais usados pela equipe."),
      "cards": ["Mapa da semana", "Computadores agora", "Onde o tempo foi gasto"]},
 ]
